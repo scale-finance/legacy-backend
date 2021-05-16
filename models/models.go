@@ -7,3 +7,9 @@ type User struct {
 	Email		string	`json:"email,omitempty"`
 	Password	string	`json:"password,omitempty"`
 }
+
+type ErrorResponse struct {
+	Status		int		`json:"status"`
+	Message		string	`json:"message"`
+	Type 		string 	`json:"type"`
+}

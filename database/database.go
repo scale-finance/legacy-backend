@@ -13,6 +13,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/google/uuid"
 	_ "github.com/go-sql-driver/mysql"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // database object
@@ -60,19 +62,38 @@ func handleOnboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// create unique id for user
-	newUser.Id = uuid.New().String()
+	// encrypt password
+	if pass, err := bcrypt.GenerateFromPassword([]byte(newUser.Password), bcrypt.DefaultCost); err != nil {
+		fmt.Println(err)
+		err := models.ErrorResponse {
+			Type:		"Password Encryption",
+			Message: 	err.Error(),
+			Status: 	1,
+		} 
 
-	// prepare query
-	query := "INSERT INTO userinfo(id, firstname, lastname, email, password) VALUES(?, ?, ?, ?, ?)"
-	if stmt, err := db.Prepare(query); err != nil {
-		fmt.Println("Hello")
-		panic(err.Error())
+		json.NewEncoder(w).Encode(err)
 	} else {
-		if _, err = stmt.Exec(newUser.Id, newUser.FirstName, newUser.LastName, newUser.Email, newUser.Password); err != nil {
+		// finish newUser initializaiton
+		newUser.Id = uuid.New().String()
+		newUser.Password = string(pass)
+	
+		// prepare query
+		query := "INSERT INTO userinfo(id, firstname, lastname, email, password) VALUES(?, ?, ?, ?, ?)"
+		if stmt, err := db.Prepare(query); err != nil {
+			fmt.Println("Hello")
 			panic(err.Error())
 		} else {
-			fmt.Fprintf(w, "User onboarded")
+			if _, err = stmt.Exec(newUser.Id, newUser.FirstName, newUser.LastName, newUser.Email, newUser.Password); err != nil {
+				panic(err.Error())
+			} else {
+				fmt.Println("User onboarded")
+				json.NewEncoder(w).Encode(models.User {
+					Id: newUser.Id,
+					FirstName: newUser.FirstName,
+					LastName: newUser.LastName,
+					Email: newUser.Email,
+				})
+			}
 		}
 	}
 }
