@@ -59,7 +59,7 @@ func GetLinkToken(w http.ResponseWriter, r *http.Request) {
 			Products: 		[]string{"auth", "transactions"},
 			CountryCodes: 	[]string{"US"},
 			Language:		"en",
-			Webhook:		"http://localhost:5000",
+			Webhook:		os.Getenv("PLAID_REDIRECT_URI"),
 		}
 
 		// create and return token
