@@ -79,6 +79,7 @@ func handleOnboard(w http.ResponseWriter, r *http.Request) {
 					LastName: newUser.LastName,
 					Email: newUser.Email,
 				})
+				return
 			}
 		}
 	}
@@ -106,8 +107,9 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 				}
 		
 				json.NewEncoder(w).Encode(res)
+				return
 			} else {
-				err := bcrypt.CompareHashAndPassword([]byte(authUser.Password), []byte(actualUser.Password)); 
+				err := bcrypt.CompareHashAndPassword([]byte(actualUser.Password), []byte(authUser.Password)); 
 				if err != nil && err == bcrypt.ErrMismatchedHashAndPassword {
 					res := models.Response {
 						Type: "Authentication",
@@ -116,6 +118,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 					}
 
 					json.NewEncoder(w).Encode(res)
+					return
 				}
 			}
 		}
@@ -137,5 +140,6 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 			Message: "Login Successful",
 			Status: 0,
 		})
+		return
 	}
 }
