@@ -1,16 +1,18 @@
 package database
 
 import (
-	"encoding/json"
-	"net/http"
 	"database/sql"
+	"time"
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 
+	"github.com/elopez00/scale-backend/helper"
 	"github.com/elopez00/scale-backend/models"
-	"github.com/gorilla/mux"
-	"github.com/google/uuid"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -49,7 +51,7 @@ func handleOnboard(w http.ResponseWriter, r *http.Request) {
 	// encrypt password
 	if pass, err := bcrypt.GenerateFromPassword([]byte(newUser.Password), bcrypt.DefaultCost); err != nil {
 		fmt.Println(err)
-		err := models.ErrorResponse {
+		err := models.Response {
 			Type:		"Password Encryption",
 			Message: 	err.Error(),
 			Status: 	1,
@@ -92,24 +94,48 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := fmt.Sprintf(
-		"SELECT id, email, firstname, lastname FROM userinfo WHERE `email`=%q AND `password`=%q",
-		authUser.Email, authUser.Password,
-	)	
-	if result, err := db.Query(query); err != nil {
-		fmt.Fprint(w, "[ERROR]: ", err.Error())
-		panic(err.Error())
-	} else {
-		var userInfo models.User
-		defer result.Close()
+	var actualUser models.User
+	query := fmt.Sprintf("SELECT password, id FROM userinfo WHERE email=%q;", authUser.Email)
+	if row, err := db.Query(query); err != nil {
+		for row.Next() {
+			if err := row.Scan(&actualUser.Password, &actualUser.Id); err != nil {
+				res := models.Response {
+					Type: "Authentication",
+					Message: "User Invalid",
+					Status: 1,
+				}
 		
-		for result.Next() {
-			if err := result.Scan(&userInfo.Id, &userInfo.Email, &userInfo.FirstName, &userInfo.LastName); err != nil {
-				fmt.Fprint(w, "[ERROR]: ", err.Error())
-				panic(err.Error())
+				json.NewEncoder(w).Encode(res)
 			} else {
-				json.NewEncoder(w).Encode(userInfo)
+				err := bcrypt.CompareHashAndPassword([]byte(authUser.Password), []byte(actualUser.Password)); 
+				if err != nil && err == bcrypt.ErrMismatchedHashAndPassword {
+					res := models.Response {
+						Type: "Authentication",
+						Message: "Password Invalid",
+						Status: 1,
+					}
+
+					json.NewEncoder(w).Encode(res)
+				}
 			}
 		}
+	}
+	
+	if token, err := helper.GenerateJWT(env.Key, actualUser.Id); err != nil {
+		panic(err.Error())
+	} else {
+		cookie := http.Cookie {
+			Name: "AuthToken",
+			Value: token,
+			Expires: time.Now().Add(365 * 24 * time.Hour),
+		}
+
+		http.SetCookie(w, &cookie)
+
+		json.NewEncoder(w).Encode(models.Response {
+			Type: "Cookie Placement",
+			Message: "Login Successful",
+			Status: 0,
+		})
 	}
 }

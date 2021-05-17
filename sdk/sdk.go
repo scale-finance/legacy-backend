@@ -3,13 +3,24 @@ package sdk
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"net/http"
+	"os"
 
-	"github.com/joho/godotenv"
+	"github.com/elopez00/scale-backend/middleware"
 	"github.com/elopez00/scale-backend/models"
 	"github.com/plaid/plaid-go/plaid"
+	"github.com/joho/godotenv"
+	"github.com/gorilla/mux"
 )
+
+var env models.Env
+
+func Connect(router *mux.Router, environment models.Env) {
+	env = environment
+
+	router.HandleFunc("/v0/getPlaidToken", GetLinkToken).Methods("GET")
+	router.HandleFunc("/", Greet)
+}
 
 // greets user at home directory
 func Greet(w http.ResponseWriter, r *http.Request) {
@@ -19,6 +30,14 @@ func Greet(w http.ResponseWriter, r *http.Request) {
 // Returns the plaid token given a body with id
 func GetLinkToken(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	if authenticated := middleware.IsAuthorized(r, env); !authenticated {
+		json.NewEncoder(w).Encode(models.Response {
+			Status: 1,
+			Type: "Authentication",
+			Message: "Client not authenticated",
+		})
+	}
 
 	live := os.Getenv("LIVE")
 

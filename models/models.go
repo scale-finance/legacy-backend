@@ -8,7 +8,7 @@ type User struct {
 	Password	string	`json:"password,omitempty"`
 }
 
-type ErrorResponse struct {
+type Response struct {
 	Status		int		`json:"status"`
 	Message		string	`json:"message"`
 	Type 		string 	`json:"type"`
@@ -24,4 +24,5 @@ type Env struct {
 	PlaidId		string
 	PlaidRedir	string
 	Live		string
+	Key 		string
 }

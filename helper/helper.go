@@ -4,12 +4,16 @@ import (
 	"net/http/httptest"
 	"testing"
 	"net/http"
+	"time"
 	"log"
+	"fmt"
 	"os"
 
 	"github.com/elopez00/scale-backend/models"
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/joho/godotenv"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 )
 
 // initializes environment variables for production
@@ -32,6 +36,7 @@ func InitEnv() models.Env {
 		PlaidId: 		os.Getenv("PLAID_CLIENT_ID"),
 		PlaidRedir: 	os.Getenv("PLAID_REDIRECT_URI"),
 		Live: 			os.Getenv("LIVE"),
+		Key: 			os.Getenv("KEY"),
 	}
 
 	return env
@@ -56,6 +61,7 @@ func InitTestEnv() models.Env {
 		PlaidId: 		os.Getenv("PLAID_CLIENT_ID"),
 		PlaidRedir: 	os.Getenv("PLAID_REDIRECT_URI"),
 		Live: 			os.Getenv("LIVE"),
+		Key: 			os.Getenv("KEY"),
 	}
 
 	return env
@@ -72,4 +78,31 @@ func CheckResponse(t *testing.T, expected, actual int) {
 	if expected != actual {
 		t.Errorf("Expected response code %d. Got %d\n", expected, actual)
 	}
+}
+
+func GenerateJWT(keyStr string, id string) (string, error) {
+	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
+		Issuer: 	id,
+		ExpiresAt: 	time.Now().Add(time.Minute * 30).Unix(),
+	})
+
+	if token, err := claims.SignedString([]byte(keyStr)); err != nil {
+		fmt.Println("Error processing key: ", err.Error())
+		return "", err
+	} else {
+		return token, nil
+	}
+}
+
+func GetCorsHandler(router *mux.Router) http.Handler {
+	c := cors.New(cors.Options {
+		AllowedOrigins: []string {
+			"http://localhost:5000",
+			"http://scale-backend-dev.us-east-1.elasticbeanstalk.com/",
+		},
+		AllowCredentials: true,
+	})
+
+	handler := c.Handler(router)
+	return handler
 }
