@@ -6,9 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/elopez00/scale-backend/models"
 	"github.com/gorilla/mux"
 	"github.com/google/uuid"
@@ -19,28 +17,14 @@ import (
 
 // database object
 var db *sql.DB
+var env models.Env
 
 // Connects to database
-func Connect(router *mux.Router) *sql.DB {
-	// check environemnt
-	if os.Getenv("LIVE") != "true" {
-		if err := godotenv.Load(".env"); err != nil {
-			log.Fatal(err.Error())
-		}
-	}
-	
-	var (
-		// credentials
-		username string = os.Getenv("DB_USERNAME")
-		password string = os.Getenv("DB_PASSWORD")
-		database string = os.Getenv("DB_DATABASE")
-		accesspt string = os.Getenv("DB_ACCESSPT")
+func Connect(router *mux.Router, environment models.Env) *sql.DB {
+	var err error
+	env = environment
 
-		// error
-		err error
-	)
-
-	signIn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s", username, password, accesspt, database)
+	signIn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s", env.DbUser, env.DbPass, env.DbAccess, env.DbData)
 	if db, err = sql.Open("mysql", signIn); err != nil {
 		fmt.Println("Error here")
 		log.Fatal(err.Error())

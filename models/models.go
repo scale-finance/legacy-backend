@@ -13,3 +13,15 @@ type ErrorResponse struct {
 	Message		string	`json:"message"`
 	Type 		string 	`json:"type"`
 }
+
+type Env struct {
+	DbUser		string
+	DbPass		string
+	DbData		string
+	DbAccess	string
+	PlaidCtry	string
+	PlaidSecret	string
+	PlaidId		string
+	PlaidRedir	string
+	Live		string
+}
