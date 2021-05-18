@@ -5,3 +5,9 @@
 
 # Environment Variables
 .env
+
+# Temp
+helper
+models
+middelware
+database
