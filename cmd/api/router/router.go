@@ -9,6 +9,7 @@ import (
 func Get(app *app.App) *httprouter.Router {
 	mux := httprouter.New()
 	mux.POST("/onboard", auth.Onboard(app))
+	mux.GET("/login", auth.Login(app))
 
 	return mux
 }

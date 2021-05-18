@@ -16,16 +16,16 @@ func main() {
 		if app, err := application.Get(); err != nil {
 			log.Fatal(err)
 		} else {
+			defer app.DB.Close()
 			srv := server.
 				Get().
 				WithAddr(app.Config.GetPort()).
 				WithHandler(router.Get(app))
 	
-				log.Println("Starting server at port ", app.Config.GetPort())
-				if err := srv.Start(); err != nil {
-					log.Fatal(err)
-				}
-			defer app.DB.Close()
+			log.Println("Starting server at port", app.Config.GetPort())
+			if err := srv.Start(); err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 }

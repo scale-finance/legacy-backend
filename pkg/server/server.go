@@ -3,8 +3,10 @@ package server
 import (
 	"errors"
 	"net/http"
+	"fmt"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/rs/cors"
 )
 
 type Server struct {
@@ -18,12 +20,13 @@ func Get() *Server {
 }
 
 func (s *Server) WithAddr(addr string) *Server {
-	s.srv.Addr = addr
+	s.srv.Addr = fmt.Sprintf(":%v", addr)
 	return s
 }
 
 func (s *Server) WithHandler(router *httprouter.Router) *Server {
-	s.srv.Handler = router
+	handler := cors.Default().Handler(router)
+	s.srv.Handler = handler
 	return s
 }
 
