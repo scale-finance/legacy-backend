@@ -9,7 +9,8 @@ type DB struct {
 	Client	*sql.DB
 }
 
-// Gets the database object after connection, else returns error
+// Recieves a string that will describe its credentials and will return a database object
+// If Get encounters any errors, it will return it.
 func Get(connectionString string) (*DB, error) {
 	if db, err := sql.Open("mysql", connectionString); err != nil {
 		return nil, err
@@ -20,6 +21,10 @@ func Get(connectionString string) (*DB, error) {
 
 		return &DB { Client: db, }, nil
 	}
+}
+
+func GetTest(client *sql.DB) (*DB) {
+	return &DB { Client: client }
 }
 
 func (db *DB) Close() error {

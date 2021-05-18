@@ -9,8 +9,8 @@ import (
 	"github.com/elopez00/scale-backend/cmd/api/models"
 	"github.com/elopez00/scale-backend/pkg/cookie"
 	"github.com/julienschmidt/httprouter"
-	uuid "github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"github.com/google/uuid"
 )
 
 // onboard user to DB given application sequence. This function is in charge of creating
@@ -44,12 +44,13 @@ func Onboard(app *application.App) httprouter.Handle {
 				}); return
 			} else {
 				// finish gather important user data
-				user.Id = uuid.New().String()
 				user.Password = string(password)
+				user.Id = uuid.New().String()
+
 
 				// create user in database
 				if err := user.Create(app); err != nil {
-					log.Println("Failed to creatue user in database: ", err)
+					log.Println("Failed to create user in database: ", err)
 					json.NewEncoder(w).Encode(models.Response {
 						Status: 1,
 						Type: "Onboarding",

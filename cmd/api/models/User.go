@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"log"
 
 	application "github.com/elopez00/scale-backend/pkg/app"
 )
@@ -16,12 +17,14 @@ type User struct {
 
 // Creates user in database
 func (u *User) Create(app *application.App) error {
+	log.Println(u.Id)
 	query := "INSERT INTO userinfo(id, firstname, lastname, email, password) VALUES(?,?,?,?,?)"
 	if stmt, err := app.DB.Client.Prepare(query); err != nil {
+		log.Println("Prepare failure")
 		return err
 	} else {
 		if _, err := stmt.Exec(u.Id, u.FirstName, u.LastName, u.Email, u.Password); err != nil {
-			fmt.Println("User Onboarded")
+			log.Println("Execution failure", err)
 		}
 	}
 
