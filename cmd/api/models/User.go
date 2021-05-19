@@ -17,7 +17,6 @@ type User struct {
 
 // Creates user in database
 func (u *User) Create(app *application.App) error {
-	log.Println(u.Id)
 	query := "INSERT INTO userinfo(id, firstname, lastname, email, password) VALUES(?,?,?,?,?)"
 	if stmt, err := app.DB.Client.Prepare(query); err != nil {
 		log.Println("Prepare failure")
@@ -33,18 +32,21 @@ func (u *User) Create(app *application.App) error {
 
 // checks to see if user exists
 func (u *User) Exists(app *application.App) bool {
-	query := fmt.Sprintf("SELECT * FROM userinfo WHERE email=%q", u.Email)
-	if err := app.DB.Client.QueryRow(query); err != nil {
+	var test User
+	query := fmt.Sprintf("SELECT firstname, email FROM userinfo WHERE email=%q", u.Email)
+	if err := app.DB.Client.QueryRow(query).Scan(&test.Id, &test.Email); err != nil {
+		log.Println(err)
 		return false
 	} else {
+		log.Println(test.FirstName)
 		return true
 	}
 }
 
 // retrieves id and password based on credentials
 func (u *User) GetCredentials(app *application.App, actualUser *User) error {
-	query := fmt.Sprintf("SELECT password, id FROM userinfo WHERE email=%q", u.Email)
-	if err := app.DB.Client.QueryRow(query).Scan(&actualUser.Password, &actualUser.Id); err != nil {
+	query := fmt.Sprintf("SELECT email, password, id FROM userinfo WHERE email=%q", u.Email)
+	if err := app.DB.Client.QueryRow(query).Scan(&actualUser.Email, &actualUser.Password, &actualUser.Id); err != nil {
 		return err
 	}
 

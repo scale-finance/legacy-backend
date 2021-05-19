@@ -20,6 +20,17 @@ func Post(endpoint string, handler httprouter.Handle, body io.Reader) *httptest.
 	return res
 }
 
+func Get(endpoint string, handler httprouter.Handle, body io.Reader) *httptest.ResponseRecorder {
+	req, _ := http.NewRequest("GET", endpoint, body)
+
+	mux := httprouter.New()
+	mux.GET(endpoint, handler)
+
+	res := ExecuteRequest(req, mux)
+
+	return res
+}
+
 func ExecuteRequest(req *http.Request, handler *httprouter.Router) *httptest.ResponseRecorder {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)

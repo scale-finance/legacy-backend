@@ -9,7 +9,6 @@ import (
 	"github.com/elopez00/scale-backend/cmd/api/models"
 	"github.com/elopez00/scale-backend/pkg/cookie"
 	"github.com/julienschmidt/httprouter"
-	"golang.org/x/crypto/bcrypt"
 	"github.com/google/uuid"
 )
 
@@ -34,35 +33,26 @@ func Onboard(app *application.App) httprouter.Handle {
 				Type: "Onboarding",
 				Message: "User already exists",
 			}); return
-		} else { // generate password hash from database
-			if password, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost); err != nil {
-				log.Println("Failed to generate password: ", err)
+		} else { 
+			// finish gather important user data
+			user.Password = EncryptPassword(user.Password)
+			if len(user.Id) == 0 {
+				user.Id = uuid.New().String()
+			}
+			// create user in database
+			if err := user.Create(app); err != nil {
+				// log.Println("Failed to create user in database: ", err)
 				json.NewEncoder(w).Encode(models.Response {
 					Status: 1,
 					Type: "Onboarding",
-					Message: "Password encryption failure",
+					Message: "Unable to create user",
 				}); return
 			} else {
-				// finish gather important user data
-				user.Password = string(password)
-				user.Id = uuid.New().String()
-
-
-				// create user in database
-				if err := user.Create(app); err != nil {
-					log.Println("Failed to create user in database: ", err)
-					json.NewEncoder(w).Encode(models.Response {
-						Status: 1,
-						Type: "Onboarding",
-						Message: "Unable to create user",
-					}); return
-				} else {
-					json.NewEncoder(w).Encode(models.Response {
-						Status: 0,
-						Type: "Onboarding",
-						Message: "User successfully created",
-					})
-				}
+				json.NewEncoder(w).Encode(models.Response {
+					Status: 0,
+					Type: "Onboarding",
+					Message: "User successfully created",
+				})
 			}
 		}
 	}
@@ -92,7 +82,8 @@ func Login(app *application.App) httprouter.Handle {
 				Message: "User Invalid",
 			}); return
 		} else { // check to see if passwords match
-			if err := bcrypt.CompareHashAndPassword([]byte(actualUser.Password), []byte(authUser.Password)); err != nil {
+			if match := HashMatch(authUser.Password, actualUser.Password); !match {
+				log.Println(actualUser.Password)
 				json.NewEncoder(w).Encode(models.Response {
 					Status: 1,
 					Type: "Login",
