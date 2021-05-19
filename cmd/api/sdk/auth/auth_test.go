@@ -10,7 +10,6 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/elopez00/scale-backend/cmd/api/models"
 	"github.com/elopez00/scale-backend/cmd/api/sdk/auth"
-	application "github.com/elopez00/scale-backend/pkg/app"
 	"github.com/elopez00/scale-backend/pkg/test"
 )
 
@@ -22,19 +21,13 @@ var user = models.User {
 	Password: "southpark",
 }
 
-func newMock() (*application.App, sqlmock.Sqlmock) {
-	db, mock, _ := sqlmock.New()
-	app := application.GetTest(db)
-	return app, mock
-}
-
 func getBody() io.Reader {
 	body, _ := json.Marshal(user)
 	return bytes.NewBuffer(body)
 }
 
 func TestOnboardingSuccess(t *testing.T) {
-	app, mock := newMock()
+	app, mock := test.GetMockApp()
 	defer app.DB.Client.Close()
 	
 	// run exepctation
@@ -63,7 +56,7 @@ func TestOnboardingSuccess(t *testing.T) {
 }
 
 func TestExistingUserError(t *testing.T) {
-	app, mock := newMock()
+	app, mock := test.GetMockApp()
 	defer app.DB.Client.Close()
 
 	// run expectation
@@ -94,7 +87,7 @@ func TestExistingUserError(t *testing.T) {
 }
 
 func TestPasswordIncorrect(t *testing.T) {
-	app, mock := newMock()
+	app, mock := test.GetMockApp()
 	defer app.DB.Client.Close()
 	
 	password := "wrong password"
@@ -127,7 +120,7 @@ func TestPasswordIncorrect(t *testing.T) {
 }
 
 func TestUserInvalid(t *testing.T) {
-	app, mock := newMock()
+	app, mock := test.GetMockApp()
 	defer app.DB.Client.Close()
 
 	query := `SELECT email, password, id FROM userinfo WHERE email\="smarsh@southpark\.com"`
@@ -153,7 +146,7 @@ func TestUserInvalid(t *testing.T) {
 }
 
 // func TestCookie(t *testing.T) {
-// 	app, mock := newMock()
+// 	app, mock := test.GetMockApp()
 // 	defer app.DB.Client.Close()
 
 // 	// tesing query

@@ -1,4 +1,4 @@
-package Plaid
+package plaid
 
 import (
 	"log"

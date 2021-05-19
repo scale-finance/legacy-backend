@@ -1,8 +1,11 @@
 package cookie
 
+// TODO this package might be stupid
+
 import (
-	"time"
 	"net/http"
+	// "net/http/httptest"
+	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	application "github.com/elopez00/scale-backend/pkg/app"

@@ -27,6 +27,6 @@ func Get() (*App, error) {
 func GetTest(db *sql.DB) *App {
 	return &App { 
 		DB: database.GetTest(db),
-		Config: nil,
+		Config: config.GetTest(),
 	}
 }

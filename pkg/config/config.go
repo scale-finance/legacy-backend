@@ -35,6 +35,15 @@ func Get() *Config {
 	return config
 }
 
+func GetTest() *Config {
+	config := &Config {
+		plaid: map[string]string {},
+		key: "testkey",
+	}
+
+	return config
+}
+
 // Gets the required string to open database instance
 func (config *Config) GetDBConnectionString() string {
 	return fmt.Sprintf(
