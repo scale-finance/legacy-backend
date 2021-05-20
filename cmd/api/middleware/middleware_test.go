@@ -10,16 +10,16 @@ import (
 	"github.com/elopez00/scale-backend/pkg/test"
 )
 
-func TestUnvalidAuthentication(t *testing.T) {
+func TestInvalidAuthentication(t *testing.T) {
 	app, _ := test.GetMockApp()
 	defer app.DB.Client.Close()
 
 	if res := test.Get("/", middleware.Authenticate(test.Handler(app), app), nil); res.Code != http.StatusUnauthorized {
 		t.Errorf("Wrong http status. Expected %v, got: %v", http.StatusUnauthorized, res.Code)
 	} else {
-		// encode response body
+		// Decode response body
 		var response models.Response
-		json.NewEncoder(res).Encode(&response)
+		json.NewDecoder(res.Body).Decode(&response)
 
 		if response.Message != "Unauthorized User" {
 			t.Errorf("This response shouldn't have been possible, expected unauthorized user, got: %v", response.Message)
@@ -31,15 +31,15 @@ func TestValidAuthentication(t *testing.T) {
 	app, _ := test.GetMockApp()
 	defer app.DB.Client.Close()
 
-	if res := test.Get("/", middleware.Authenticate(test.Handler(app), app), nil); res.Code != http.StatusOK {
+	if res := test.GetWithCookie("/", middleware.Authenticate(test.Handler(app), app), nil, app); res.Code != http.StatusOK {
 		t.Errorf("Wrong http status. Expected %v, got: %v", http.StatusOK, res.Code)
 	} else {
 		// encode response body
 		var response models.Response
-		json.NewEncoder(res).Encode(&response)
+		json.NewDecoder(res.Body).Decode(&response)
 
 		if response.Message != "Hello World!" {
-			t.Errorf("This response shouldn't have been possible, expected greeting, got: %v", response.Message)
+			t.Errorf("This response was supposed to work, expected greeting, got: %v", response.Message)
 		}
 	}
 }

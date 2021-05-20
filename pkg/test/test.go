@@ -11,6 +11,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/elopez00/scale-backend/cmd/api/models"
 	application "github.com/elopez00/scale-backend/pkg/app"
+	"github.com/elopez00/scale-backend/pkg/cookie"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -42,11 +43,12 @@ func Get(endpoint string, handler httprouter.Handle, body io.Reader) *httptest.R
 	return res
 }
 
-func GetWithCookie(endpoint string, handler httprouter.Handle, body io.Reader) *httptest.ResponseRecorder {
+func GetWithCookie(endpoint string, handler httprouter.Handle, body io.Reader, app *application.App) *httptest.ResponseRecorder {
 	req, _ := http.NewRequest("GET", endpoint, body)
+	token, _ := cookie.GenerateJWT(app, "testvalue")
 	req.AddCookie(&http.Cookie {
 		Name: "testcookie",
-		Value: "testkey",
+		Value: token,
 		Expires: time.Now().Add(365 * 24 * time.Hour),
 	})
 

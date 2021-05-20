@@ -13,21 +13,23 @@ import (
 
 func Authenticate(next httprouter.Handle, app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		w.Header().Set("Content-Type", "application/json")
+
 		if valid, err := cookie.Valid(r, app, "testcookie"); err != nil {
-			w.WriteHeader(http.StatusBadGateway)
+			w.WriteHeader(http.StatusUnauthorized)
 			log.Println(err.Error())
 			json.NewEncoder(w).Encode(models.Response {
 				Status: 1,
 				Type: "Middleware",
-				Message: "Failed to parse JWT",
-			})
+				Message: "Unauthorized User",
+			}); return
 		} else if !valid {
 			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(models.Response {
 				Status: 1,
 				Type: "Middleware",
-				Message: "Invalid Authentication code",
-			})
+				Message: "Unauthorized User",
+			}); return
 		} else {
 			next(w,r,p)
 		}

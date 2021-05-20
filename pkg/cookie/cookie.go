@@ -13,7 +13,7 @@ import (
 
 // Creates valid httponly cookie
 func Create(w http.ResponseWriter, app* application.App, name, id string) error {
-	if token, err := generateJWT(app, id); err != nil {
+	if token, err := GenerateJWT(app, id); err != nil {
 		return err
 	} else {
 		cookie := http.Cookie {
@@ -47,7 +47,7 @@ func Valid(r *http.Request, app *application.App, name string) (bool, error) {
 } 
 
 // static functions that generates JWT
-func generateJWT(app *application.App, id string) (string, error) {
+func GenerateJWT(app *application.App, id string) (string, error) {
 	key := app.Config.GetKey()
 
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims {
