@@ -5,7 +5,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/elopez00/scale-backend/cmd/api/models"
-	application "github.com/elopez00/scale-backend/pkg/app"
+	"github.com/elopez00/scale-backend/pkg/test"
 )
 
 var user = models.User {
@@ -16,17 +16,18 @@ var user = models.User {
 	Password: "southpark",
 }
 
-func newMock() (*application.App, sqlmock.Sqlmock){
-	if db, mock, err := sqlmock.New(); err != nil {
-		panic(err.Error)
-	} else {
-		app := application.GetTest(db)
-		return app, mock
-	}
+type testToken struct {
+	accessToken		string
+	itemID			string
+}
+
+var sampleToken = testToken {
+	accessToken: "randomaccess",
+	itemID: "randomid",
 }
 
 func TestUserCreate(t *testing.T) {
-	app, mock := newMock()
+	app, mock := test.GetMockApp()
 	defer app.DB.Client.Close()
 
 	query := "INSERT INTO userinfo\\(id, firstname, lastname, email, password\\) VALUES\\(\\?,\\?,\\?,\\?,\\?\\)"
@@ -43,7 +44,7 @@ func TestUserCreate(t *testing.T) {
 }
 
 func TestUserDoesExists(t *testing.T) {
-	app, mock := newMock()
+	app, mock := test.GetMockApp()
 	defer app.DB.Client.Close()
 
 	rows := sqlmock.NewRows([]string{"id","email"}).
@@ -61,7 +62,7 @@ func TestUserDoesExists(t *testing.T) {
 }
 
 func TestUserDoesNotExist(t *testing.T) {
-	app, mock := newMock()
+	app, mock := test.GetMockApp()
 	defer app.DB.Client.Close()
 
 	query := `SELECT firstname, email FROM userinfo WHERE email\="smarsh@southpark\.com"`
@@ -76,7 +77,7 @@ func TestUserDoesNotExist(t *testing.T) {
 }
 
 func TestSuccessfulGetCredential(t *testing.T) {
-	app, mock := newMock()
+	app, mock := test.GetMockApp()
 	defer app.DB.Client.Close()
 
 	rows := sqlmock.NewRows([]string{"email", "password", "id"}).
@@ -94,7 +95,7 @@ func TestSuccessfulGetCredential(t *testing.T) {
 }
 
 func TestUnsuccessfulGetCredential(t *testing.T) {
-	app, mock := newMock()
+	app, mock := test.GetMockApp()
 	defer app.DB.Client.Close()
 
 	query := `SELECT email, password, id FROM userinfo WHERE email\="smarsh@southpark\.com"`
@@ -104,4 +105,21 @@ func TestUnsuccessfulGetCredential(t *testing.T) {
 	if err := user.GetCredentials(app, &actualUser); err == nil {
 		t.Error("This process should have failed and returned an error")
 	}
+}
+
+func TestTokenAdd(t *testing.T) {
+	app, mock := test.GetMockApp()
+	defer app.DB.Client.Close()
+
+	query := `INSERT INTO plaidtokens\(id, token, itemID\) VALUES\(\?,\?,\?\)`
+	mock.
+		ExpectPrepare(query).
+		ExpectExec().
+		WithArgs(user.Id, sampleToken.accessToken, sampleToken.itemID).
+		WillReturnResult(sqlmock.NewResult(0,0))
+
+	user.AddToken(app, sampleToken.accessToken, sampleToken.itemID)
+	if err := mock.ExpectationsWereMet(); err != nil {
+        t.Errorf("there were unfulfilled expections: %s", err)
+    }
 }

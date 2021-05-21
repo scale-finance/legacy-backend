@@ -42,6 +42,7 @@ func GetTest() *Config {
 		plaid: map[string]string {
 			"secret": 		os.Getenv("PLAID_SECRET"),
 			"client": 		os.Getenv("PLAID_CLIENT_ID"),
+			"redirectUrl": 	os.Getenv("PLAID_REDIRECT_URI"),
 		},
 		key: "testkey",
 	}

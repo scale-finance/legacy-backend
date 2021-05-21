@@ -8,3 +8,7 @@ type Response struct {
 }
 
 type Key string
+
+type Tkn struct {
+	Public		string
+}

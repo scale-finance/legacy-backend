@@ -12,16 +12,16 @@ import (
 	"github.com/elopez00/scale-backend/cmd/api/models"
 	application "github.com/elopez00/scale-backend/pkg/app"
 	"github.com/elopez00/scale-backend/pkg/cookie"
-	"github.com/julienschmidt/httprouter"
 	"github.com/joho/godotenv"
+	"github.com/julienschmidt/httprouter"
 )
 
 func GetMockApp() (*application.App, sqlmock.Sqlmock) {
 	db, mock, _ := sqlmock.New()
-
-	app := application.GetTest(db)
-	return app, mock
 	
+	app := application.GetTest(db)
+
+	return app, mock	
 }
 
 func GetPlaidMockApp() (*application.App, sqlmock.Sqlmock) {

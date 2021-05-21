@@ -45,8 +45,24 @@ func (u *User) Exists(app *application.App) bool {
 
 // retrieves id and password based on credentials
 func (u *User) GetCredentials(app *application.App, actualUser *User) error {
+	// ! Switch to prepare method to test this better
 	query := fmt.Sprintf("SELECT email, password, id FROM userinfo WHERE email=%q", u.Email)
 	if err := app.DB.Client.QueryRow(query).Scan(&actualUser.Email, &actualUser.Password, &actualUser.Id); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (u *User) AddToken(app *application.App, token, itemID string) error {
+	query := "INSERT INTO plaidtokens(id, token, itemID) VALUES(?,?,?)"
+	stmt, err := app.DB.Client.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(u.Id, token, itemID)
+	if err != nil {
 		return err
 	}
 

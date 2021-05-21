@@ -144,20 +144,3 @@ func TestUserInvalid(t *testing.T) {
 		}
 	}
 }
-
-// func TestCookie(t *testing.T) {
-// 	app, mock := test.GetMockApp()
-// 	defer app.DB.Client.Close()
-
-// 	// tesing query
-// 	query := `SELECT email, password, id FROM userinfo WHERE email\="smarsh@southpark\.com"`
-// 	mock.ExpectQuery(query)
-
-// 	if res := test.Get("/login", auth.Login(app), getBody()); res.Code != http.StatusOK {
-// 		t.Errorf("Handler returned wrong status code, got: %v", res.Code)
-// 	} else {
-// 		if len(res.Result().Cookies()) == 0 {
-// 			t.Error("Cookie was not created")
-// 		}
-// 	}
-// }
