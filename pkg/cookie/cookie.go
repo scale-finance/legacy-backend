@@ -4,7 +4,7 @@ package cookie
 
 import (
 	"net/http"
-	// "net/http/httptest"
+	"fmt"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -29,19 +29,21 @@ func Create(w http.ResponseWriter, app* application.App, name, id string) error 
 }
 
 // tests to see if cookie is still valid
-func Valid(r *http.Request, app *application.App, name string) (bool, error) {
+func Valid(r *http.Request, app *application.App, name string) (string, error) {
 	key := app.Config.GetKey()
 	if cookie, err := r.Cookie(name); err != nil {
-		return false, err
+		return "", err
 	} else {
-		if token, err := jwt.ParseWithClaims(cookie.Value, jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if token, err := jwt.Parse(cookie.Value, func(token *jwt.Token) (interface{}, error) {
 			return []byte(key), nil
 		}); err != nil {
-			return false, err
+			return "", err
 		} else if !token.Valid {
-			return false, err
+			return "", err
 		} else {
-			return true, nil
+			claims, _ := token.Claims.(jwt.MapClaims)
+			issuer := fmt.Sprintf("%v", claims["iss"])
+			return issuer, nil
 		}
 	}
 } 

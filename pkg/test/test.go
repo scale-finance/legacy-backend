@@ -13,10 +13,23 @@ import (
 	application "github.com/elopez00/scale-backend/pkg/app"
 	"github.com/elopez00/scale-backend/pkg/cookie"
 	"github.com/julienschmidt/httprouter"
+	"github.com/joho/godotenv"
 )
 
 func GetMockApp() (*application.App, sqlmock.Sqlmock) {
 	db, mock, _ := sqlmock.New()
+
+	app := application.GetTest(db)
+	return app, mock
+	
+}
+
+func GetPlaidMockApp() (*application.App, sqlmock.Sqlmock) {
+	if err := godotenv.Load("../../../../.env"); err != nil {
+		panic(err.Error())
+	}
+	db, mock, _ := sqlmock.New()
+
 	app := application.GetTest(db)
 	return app, mock
 }
@@ -43,11 +56,11 @@ func Get(endpoint string, handler httprouter.Handle, body io.Reader) *httptest.R
 	return res
 }
 
-func GetWithCookie(endpoint string, handler httprouter.Handle, body io.Reader, app *application.App) *httptest.ResponseRecorder {
+func GetWithCookie(endpoint string, handler httprouter.Handle, body io.Reader, app *application.App, name string) *httptest.ResponseRecorder {
 	req, _ := http.NewRequest("GET", endpoint, body)
 	token, _ := cookie.GenerateJWT(app, "testvalue")
 	req.AddCookie(&http.Cookie {
-		Name: "testcookie",
+		Name: name,
 		Value: token,
 		Expires: time.Now().Add(365 * 24 * time.Hour),
 	})

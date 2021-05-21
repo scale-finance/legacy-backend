@@ -31,7 +31,7 @@ func TestValidAuthentication(t *testing.T) {
 	app, _ := test.GetMockApp()
 	defer app.DB.Client.Close()
 
-	if res := test.GetWithCookie("/", middleware.Authenticate(test.Handler(app), app), nil, app); res.Code != http.StatusOK {
+	if res := test.GetWithCookie("/", middleware.Authenticate(test.Handler(app), app), nil, app, "AuthToken"); res.Code != http.StatusOK {
 		t.Errorf("Wrong http status. Expected %v, got: %v", http.StatusOK, res.Code)
 	} else {
 		// encode response body

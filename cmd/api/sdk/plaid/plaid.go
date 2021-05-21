@@ -2,6 +2,7 @@ package plaid
 
 import (
 	"log"
+	"fmt"
 	"net/http"
 	"encoding/json"
 
@@ -27,22 +28,15 @@ func GetPlaidToken(app *application.App) httprouter.Handle {
 		if client, err := plaid.NewClient(clientOptions); err != nil {
 			log.Println("Error Loading Client")
 			json.NewEncoder(w).Encode(models.Response {
-				Type: "Plaid Token",
+				Type: "Link Token",
 				Status: 1,
-				Message: err.Error(),
+				Message: "Failure to load client",
 			})
 		} else {
-			// TODO retrieve user id from auth token
-			var user models.User
-			if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			} 
-
 			// create configuration
 			tokenConfig := plaid.LinkTokenConfigs {
 				User: &plaid.LinkTokenUser {
-					ClientUserID: user.Id,
+					ClientUserID: fmt.Sprintf("%v", r.Context().Value(models.Key("user"))),
 				},
 				ClientName: 	"Scale",
 				Products: 		[]string{"auth", "transactions"},
@@ -55,14 +49,16 @@ func GetPlaidToken(app *application.App) httprouter.Handle {
 			if tokenResponse, err := client.CreateLinkToken(tokenConfig); err != nil {
 				log.Println("Error Loading Client")
 				json.NewEncoder(w).Encode(models.Response {
-					Type: "Plaid Token",
+					Type: "Link Token",
 					Status: 1,
-					Message: err.Error(),
+					Message: "Failure to load client",
 				})
 			} else {
-				type response = struct { LinkToken string `json:"linktoken"` }
-				json.NewEncoder(w).Encode(response {
-					LinkToken: tokenResponse.LinkToken,
+				json.NewEncoder(w).Encode(models.Response {
+					Result: tokenResponse.LinkToken,
+					Type: "Link Token",
+					Message: "Successfully recieved link token from plaid",
+					Status: 0,
 				})
 			}
 		}

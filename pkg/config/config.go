@@ -5,6 +5,8 @@ import (
 	"os"
 )
 
+// TODO make implement dev key for plaid api
+
 type Config struct {
 	plaid			map[string]string
 	dbUser			string
@@ -37,7 +39,10 @@ func Get() *Config {
 
 func GetTest() *Config {
 	config := &Config {
-		plaid: map[string]string {},
+		plaid: map[string]string {
+			"secret": 		os.Getenv("PLAID_SECRET"),
+			"client": 		os.Getenv("PLAID_CLIENT_ID"),
+		},
 		key: "testkey",
 	}
 
