@@ -15,22 +15,27 @@ type User struct {
 	Password	string	`json:"password,omitempty"`
 }
 
-// Creates user in database
+// Method that creates user row based on current user. If there are any errors with the
+// query, these issues will be returned
 func (u *User) Create(app *application.App) error {
 	query := "INSERT INTO userinfo(id, firstname, lastname, email, password) VALUES(?,?,?,?,?)"
-	if stmt, err := app.DB.Client.Prepare(query); err != nil {
+	
+	stmt, err := app.DB.Client.Prepare(query)
+	if err != nil {
 		log.Println("Prepare failure")
 		return err
-	} else {
-		if _, err := stmt.Exec(u.Id, u.FirstName, u.LastName, u.Email, u.Password); err != nil {
-			log.Println("Execution failure", err)
-		}
+	} 
+	
+	if _, err := stmt.Exec(u.Id, u.FirstName, u.LastName, u.Email, u.Password); err != nil {
+		log.Println("Execution failure", err)
 	}
 
 	return nil
 }
 
-// checks to see if user exists
+// This method checks to see if current user exists in the database. Based on the
+// result of this query the function will return a boolean.
+// ! This function automatically assumes that errors yield false
 func (u *User) Exists(app *application.App) bool {
 	var test User
 	query := fmt.Sprintf("SELECT firstname, email FROM userinfo WHERE email=%q", u.Email)
@@ -43,9 +48,9 @@ func (u *User) Exists(app *application.App) bool {
 	}
 }
 
-// retrieves id and password based on credentials
+// Method gives gets credentials found in database using current user's Email value.
+// Any problem with the query or database connection will be reflected in returned error.
 func (u *User) GetCredentials(app *application.App, actualUser *User) error {
-	// ! Switch to prepare method to test this better
 	query := fmt.Sprintf("SELECT email, password, id FROM userinfo WHERE email=%q", u.Email)
 	if err := app.DB.Client.QueryRow(query).Scan(&actualUser.Email, &actualUser.Password, &actualUser.Id); err != nil {
 		return err
@@ -54,6 +59,10 @@ func (u *User) GetCredentials(app *application.App, actualUser *User) error {
 	return nil
 }
 
+// Method adds the permanent plaid token and stores into the plaidtokens table with the
+// same id as the user. This function accepts two strings. The first one being the 
+// string describing the permanent token, and the second being a string that describes
+// the item ID. Any problem given by this request will be reflected by the returned error.
 func (u *User) AddToken(app *application.App, token, itemID string) error {
 	query := "INSERT INTO plaidtokens(id, token, itemID) VALUES(?,?,?)"
 	stmt, err := app.DB.Client.Prepare(query)

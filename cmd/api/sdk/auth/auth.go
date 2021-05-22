@@ -3,11 +3,12 @@ package auth
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 	"log"
-
+	
 	application "github.com/elopez00/scale-backend/pkg/app"
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/elopez00/scale-backend/cmd/api/models"
-	"github.com/elopez00/scale-backend/pkg/cookie"
 	"github.com/julienschmidt/httprouter"
 	"github.com/google/uuid"
 )
@@ -93,7 +94,7 @@ func Login(app *application.App) httprouter.Handle {
 		}
 
 		// create a cookie to completely authenticate user
-		if err := cookie.Create(w, app, "AuthToken", actualUser.Id); err != nil {
+		if err := CreateCookie(w, app, "AuthToken", actualUser.Id); err != nil {
 			log.Println(err.Error())
 			json.NewEncoder(w).Encode(models.Response {
 				Status: 1,
@@ -107,5 +108,38 @@ func Login(app *application.App) httprouter.Handle {
 				Message: "User successfully authenticated",
 			})
 		}
+	}
+}
+
+// Creates valid httponly cookie
+func CreateCookie(w http.ResponseWriter, app* application.App, name, id string) error {
+	if token, err := GenerateJWT(app, id); err != nil {
+		return err
+	} else {
+		cookie := http.Cookie {
+			Name: name,
+			Value: token,
+			Expires: time.Now().Add(365 * 24 * time.Hour),
+			HttpOnly: true,
+		}
+
+		http.SetCookie(w, &cookie)
+		return nil
+	}
+}
+
+// static functions that generates JWT
+func GenerateJWT(app *application.App, id string) (string, error) {
+	key := app.Config.GetKey()
+
+	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims {
+		Issuer: 	id,
+		ExpiresAt: 	time.Now().Add(time.Minute * 30).Unix(),
+	})
+
+	if token, err := claims.SignedString([]byte(key)); err != nil {
+		return "", err
+	} else {
+		return token, nil
 	}
 }
