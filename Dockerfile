@@ -10,7 +10,7 @@ WORKDIR /app
 RUN go mod download
 
 # Run build
-RUN go build -o main .
+RUN go build -o main ./cmd/api/main.go
 
 # Expose intended port
 EXPOSE 5000
