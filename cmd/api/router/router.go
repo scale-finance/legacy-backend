@@ -15,6 +15,7 @@ func Get(app *app.App) *httprouter.Router {
 	mux.GET("/v0/login", auth.Login(app))
 	mux.GET("/v0/getLinkToken", m.Authenticate(p.GetPlaidToken(app), app))
 	mux.GET("/v0/createAccessToken", m.Authenticate(p.CreateAccessToken(app), app))
+	mux.GET("/v0/", m.Authenticate(auth.AuthCheck(), app))
 
 	return mux
 }

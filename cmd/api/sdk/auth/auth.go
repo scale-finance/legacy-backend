@@ -143,3 +143,14 @@ func GenerateJWT(app *application.App, id string) (string, error) {
 		return token, nil
 	}
 }
+
+// Function that tests authentication state
+func AuthCheck() httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		json.NewEncoder(w).Encode(models.Response {
+			Status: 0,
+			Type: "Authentication",
+			Message: "This app is authenticated",
+		})
+	}
+}
