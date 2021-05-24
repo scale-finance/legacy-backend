@@ -2,7 +2,6 @@ package plaid
 
 import (
 	"net/http"
-	"log"
 
 	"github.com/plaid/plaid-go/plaid"
 )
@@ -20,8 +19,6 @@ func Get(plaidConfig map[string]string) (*Plaid, error) {
 		Environment:	plaid.Sandbox,
 		HTTPClient:		&http.Client{},
 	}
-
-	log.Println("config", plaidConfig)
 
 	client, err := plaid.NewClient(clientOptions)
 	if err != nil {

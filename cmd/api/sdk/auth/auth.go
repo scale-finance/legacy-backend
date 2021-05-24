@@ -111,6 +111,27 @@ func Login(app *application.App) httprouter.Handle {
 	}
 }
 
+// This function logs the user out of their session by deleting the AuthToken cookie containing
+// the user user's JWT. The function should return an error status if there is no token to delete
+func Logout(app *application.App) httprouter.Handle {
+	return func (w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		if len(r.Cookies()) < 1 {
+			json.NewEncoder(w).Encode(models.Response {
+				Status: 1,
+				Type: "Sign out",
+				Message: "User already signed out",
+			})
+		} else {
+			DeleteCookie(w, app, "AuthToken")
+			json.NewEncoder(w).Encode(models.Response {
+				Status: 0,
+				Type: "Sign out",
+				Message: "User successfully signed out",
+			})
+		}
+	}
+}
+
 // Creates valid httponly cookie
 func CreateCookie(w http.ResponseWriter, app* application.App, name, id string) error {
 	if token, err := GenerateJWT(app, id); err != nil {
@@ -119,7 +140,7 @@ func CreateCookie(w http.ResponseWriter, app* application.App, name, id string) 
 		cookie := http.Cookie {
 			Name: name,
 			Value: token,
-			Expires: time.Now().Add(365 * 24 * time.Hour),
+			Expires: time.Now().Add(24 * time.Hour),
 			HttpOnly: true,
 		}
 
@@ -128,20 +149,14 @@ func CreateCookie(w http.ResponseWriter, app* application.App, name, id string) 
 	}
 }
 
-// static functions that generates JWT
-func GenerateJWT(app *application.App, id string) (string, error) {
-	key := app.Config.GetKey()
-
-	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims {
-		Issuer: 	id,
-		ExpiresAt: 	time.Now().Add(time.Minute * 30).Unix(),
-	})
-
-	if token, err := claims.SignedString([]byte(key)); err != nil {
-		return "", err
-	} else {
-		return token, nil
+// Deletes existing cookie
+func DeleteCookie(w http.ResponseWriter, app* application.App, name string) {
+	cookie := http.Cookie {
+		Name: name,
+		MaxAge: -1,
 	}
+
+	http.SetCookie(w, &cookie)
 }
 
 // Function that tests authentication state
@@ -152,5 +167,22 @@ func AuthCheck() httprouter.Handle {
 			Type: "Authentication",
 			Message: "This app is authenticated",
 		})
+	}
+}
+
+// This function generates a JWT token based on the user id stored in the database that expires in
+// 24 hours. If this function were to fail, its error would be returned respectfully.
+func GenerateJWT(app *application.App, id string) (string, error) {
+	key := app.Config.GetKey()
+
+	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims {
+		Issuer: 	id,
+		ExpiresAt: 	time.Now().Add(24 * time.Hour).Unix(),
+	})
+
+	if token, err := claims.SignedString([]byte(key)); err != nil {
+		return "", err
+	} else {
+		return token, nil
 	}
 }

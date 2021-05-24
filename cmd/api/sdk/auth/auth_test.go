@@ -100,7 +100,7 @@ func TestPasswordIncorrect(t *testing.T) {
 	query := `SELECT email, password, id FROM userinfo WHERE email\="smarsh@southpark\.com"`
 	mock.ExpectQuery(query).WillReturnRows(rows)
 
-	if res := test.Get("/login", auth.Login(app), getBody()); res.Code != http.StatusOK {
+	if res := test.Post("/login", auth.Login(app), getBody()); res.Code != http.StatusOK {
 		t.Errorf("Handler returned wrong status code, got: %v", res.Code)
 	} else {
 		// body response
@@ -126,7 +126,7 @@ func TestUserInvalid(t *testing.T) {
 	query := `SELECT email, password, id FROM userinfo WHERE email\="smarsh@southpark\.com"`
 	mock.ExpectQuery(query)
 
-	if res := test.Get("/login", auth.Login(app), getBody()); res.Code != http.StatusOK {
+	if res := test.Post("/login", auth.Login(app), getBody()); res.Code != http.StatusOK {
 		t.Errorf("Handler returned wrong status code, got: %v", res.Code)
 	} else {
 		// body response
@@ -142,5 +142,33 @@ func TestUserInvalid(t *testing.T) {
 		if (response.Message != "User Invalid") {
 			t.Errorf("Expected %q got %q", "User Invalid", response.Message)
 		}
+	}
+}
+
+func TestUserSignout(t *testing.T) {
+	app, _ := test.GetMockApp()
+	defer app.DB.Client.Close()
+
+	res := test.GetWithCookie("/v0/logout", auth.Logout(app), nil, app, "AuthToken") 
+	
+	var response models.Response
+	json.NewDecoder(res.Body).Decode(&response)
+
+	if response.Status != 0 {
+		t.Error("The cookie was not deleted")
+	}
+}
+
+func TestUserSignoutFailure(t *testing.T) {
+	app, _ := test.GetMockApp()
+	defer app.DB.Client.Close()
+
+	res := test.Get("/v0/logout", auth.Logout(app), nil)
+	
+	var response models.Response
+	json.NewDecoder(res.Body).Decode(&response)
+
+	if response.Status != 1 {
+		t.Error("This function should not have successfuly executed")
 	}
 }
