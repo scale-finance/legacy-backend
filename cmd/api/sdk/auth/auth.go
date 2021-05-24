@@ -34,28 +34,44 @@ func Onboard(app *application.App) httprouter.Handle {
 				Type: "Onboarding",
 				Message: "User already exists",
 			}); return
-		} else { 
-			// finish gather important user data
-			user.Password = EncryptPassword(user.Password)
-			if len(user.Id) == 0 {
-				user.Id = uuid.New().String()
-			}
-			// create user in database
-			if err := user.Create(app); err != nil {
-				// log.Println("Failed to create user in database: ", err)
-				json.NewEncoder(w).Encode(models.Response {
-					Status: 1,
-					Type: "Onboarding",
-					Message: "Unable to create user",
-				}); return
-			} else {
-				json.NewEncoder(w).Encode(models.Response {
-					Status: 0,
-					Type: "Onboarding",
-					Message: "User successfully created",
-				})
-			}
 		}
+
+		// finish gather important user data
+		user.Password = EncryptPassword(user.Password)
+		if len(user.Id) == 0 {
+			user.Id = uuid.New().String()
+		}
+
+		// create user in database
+		err := user.Create(app)
+		if err != nil {
+			// log.Println("Failed to create user in database: ", err)
+			json.NewEncoder(w).Encode(models.Response {
+				Status: 1,
+				Type: "Onboarding",
+				Message: "Unable to create user",
+			})
+			return
+		} 
+
+		// create a cookie to completely authenticate user
+		err = CreateCookie(w, app, "AuthToken", user.Id)
+		if err != nil {
+			log.Println(err.Error())
+			json.NewEncoder(w).Encode(models.Response {
+				Status: 1,
+				Type: "Login",
+				Message: "Failed to login",
+			})
+			return
+		}
+
+		// return successful onboarding message
+		json.NewEncoder(w).Encode(models.Response {
+			Status: 0,
+			Type: "Onboarding",
+			Message: "User successfully created",
+		})
 	}
 }
 
@@ -76,38 +92,45 @@ func Login(app *application.App) httprouter.Handle {
 
 		// get actual user from database
 		var actualUser models.User
-		if err := authUser.GetCredentials(app, &actualUser); err != nil {
+		err := authUser.GetCredentials(app, &actualUser)
+		if err != nil {
 			json.NewEncoder(w).Encode(models.Response {
 				Status: 1,
 				Type: "Login",
 				Message: "User Invalid",
-			}); return
-		} else { // check to see if passwords match
-			if match := HashMatch(authUser.Password, actualUser.Password); !match {
-				log.Println(actualUser.Password)
-				json.NewEncoder(w).Encode(models.Response {
-					Status: 1,
-					Type: "Login",
-					Message: "Password Incorrect",
-				}); return
-			}
+			})
+			return
+		}
+
+		// check to see if passwords match
+		if match := HashMatch(authUser.Password, actualUser.Password); !match {
+			log.Println(actualUser.Password)
+			json.NewEncoder(w).Encode(models.Response {
+				Status: 1,
+				Type: "Login",
+				Message: "Password Incorrect",
+			})
+			return
 		}
 
 		// create a cookie to completely authenticate user
-		if err := CreateCookie(w, app, "AuthToken", actualUser.Id); err != nil {
+		err = CreateCookie(w, app, "AuthToken", actualUser.Id)
+		if err != nil {
 			log.Println(err.Error())
 			json.NewEncoder(w).Encode(models.Response {
 				Status: 1,
 				Type: "Login",
 				Message: "Failed to login",
-			}); return
-		} else {
-			json.NewEncoder(w).Encode(models. Response {
-				Status: 0,
-				Type: "Login",
-				Message: "User successfully authenticated",
 			})
-		}
+			return
+		} 
+
+		// send successful authentication message to client
+		json.NewEncoder(w).Encode(models. Response {
+			Status: 0,
+			Type: "Login",
+			Message: "User successfully authenticated",
+		})
 	}
 }
 
