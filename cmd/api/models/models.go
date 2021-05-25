@@ -13,5 +13,5 @@ type Key string
 
 // for use of plaid public token retrieval
 type Tkn struct {
-	Public		string
+	Public		string	`json:"public"`
 }
