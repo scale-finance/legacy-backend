@@ -16,14 +16,9 @@ var user = models.User {
 	Password: "southpark",
 }
 
-type testToken struct {
-	accessToken		string
-	itemID			string
-}
-
-var sampleToken = testToken {
-	accessToken: "randomaccess",
-	itemID: "randomid",
+var token = models.Token {
+	Value: "randomaccess",
+	Id: "randomid",
 }
 
 func TestUserCreate(t *testing.T) {
@@ -115,11 +110,33 @@ func TestTokenAdd(t *testing.T) {
 	mock.
 		ExpectPrepare(query).
 		ExpectExec().
-		WithArgs(user.Id, sampleToken.accessToken, sampleToken.itemID).
+		WithArgs(user.Id, token.Value, token.Id).
 		WillReturnResult(sqlmock.NewResult(0,0))
 
-	user.AddToken(app, sampleToken.accessToken, sampleToken.itemID)
+	token.Add(app, user.Id)
 	if err := mock.ExpectationsWereMet(); err != nil {
         t.Errorf("there were unfulfilled expections: %s", err)
     }
+}
+
+func TestGetTokens(t *testing.T) {
+	app, mock := test.GetMockApp()
+	defer app.DB.Client.Close()
+
+	rows := sqlmock.NewRows([]string{"id", "token", "itemID"}).
+		AddRow(user.Id, "token1", "id1").
+		AddRow(user.Id, "token2", "id2")
+
+	query := `SELECT id, token, itemID FROM plaidtokens WHERE id\="goingdowntosouthpark"`
+	mock.ExpectQuery(query).WillReturnRows(rows)
+
+	tokens, _ := user.GetTokens(app)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
+	}
+	
+	if len(tokens) == 0 {
+		t.Error("The function did not return the tokens")
+	}
 }

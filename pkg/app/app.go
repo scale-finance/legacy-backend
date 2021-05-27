@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"log"
 
-	"github.com/elopez00/scale-backend/pkg/config"
-	"github.com/elopez00/scale-backend/pkg/database"
-	"github.com/elopez00/scale-backend/pkg/plaid"
+	"github.com/elopez00/scale-backend/pkg/app/config"
+	"github.com/elopez00/scale-backend/pkg/app/database"
+	"github.com/elopez00/scale-backend/pkg/app/plaid"
 )
 
 type App struct {

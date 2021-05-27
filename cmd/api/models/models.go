@@ -10,8 +10,3 @@ type Response struct {
 
 // for use of context keys
 type Key string
-
-// for use of plaid public token retrieval
-type Tkn struct {
-	Public		string	`json:"public"`
-}

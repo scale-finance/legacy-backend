@@ -7,6 +7,9 @@ import (
 	application "github.com/elopez00/scale-backend/pkg/app"
 )
 
+// The User struct will be used to get any information regarding the user information.
+// The id in this case scenario is a primary key and will be used to retrieve other tables
+// linked to the User.
 type User struct {
 	Id			string	`json:"id,omitempty"`
 	FirstName	string	`json:"firstname,omitempty"`
@@ -59,21 +62,32 @@ func (u *User) GetCredentials(app *application.App, actualUser *User) error {
 	return nil
 }
 
-// Method adds the permanent plaid token and stores into the plaidtokens table with the
-// same id as the user. This function accepts two strings. The first one being the 
-// string describing the permanent token, and the second being a string that describes
-// the item ID. Any problem given by this request will be reflected by the returned error.
-func (u *User) AddToken(app *application.App, token, itemID string) error {
-	query := "INSERT INTO plaidtokens(id, token, itemID) VALUES(?,?,?)"
-	stmt, err := app.DB.Client.Prepare(query)
+// Method that returns every token associated to the user in the form of a slice of Token pointers.
+// Any problem with the query or database operatinon will be reflected as an error and the slice
+// will be returned as nil.
+func (u *User) GetTokens(app *application.App) ([]*Token, error) {
+	query := fmt.Sprintf("SELECT id, token, itemID FROM plaidtokens WHERE id=%q", u.Id)
+	
+	// get rows from query
+	rows, err := app.DB.Client.Query(query)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = stmt.Exec(u.Id, token, itemID)
-	if err != nil {
-		return err
+	// create slice of token pointers
+	tokens := make([]*Token, 0)
+	var placeholder string // ! this variable is only here because I don't know how to test without it
+	
+	// loop over all the rows and create a token for each
+	for rows.Next() {
+		token := new(Token)
+		if err := rows.Scan(&placeholder, &token.Value, &token.Id); err != nil {
+			return nil, err
+		}
+
+		// each token created is to be appended to the slice
+		tokens = append(tokens, token)
 	}
 
-	return nil
+	return tokens, nil
 }
