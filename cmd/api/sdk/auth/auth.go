@@ -29,11 +29,8 @@ func Onboard(app *application.App) httprouter.Handle {
 
 		// check to see if user already exists in database
 		if user.Exists(app) {
-			json.NewEncoder(w).Encode(models.Response {
-				Status: 1,
-				Type: "Onboarding",
-				Message: "User already exists",
-			}); return
+			msg := "User already exists"
+			models.CreateError(w, http.StatusNotAcceptable, msg, nil)
 		}
 
 		// finish gather important user data
@@ -45,33 +42,22 @@ func Onboard(app *application.App) httprouter.Handle {
 		// create user in database
 		err := user.Create(app)
 		if err != nil {
-			// log.Println("Failed to create user in database: ", err)
-			json.NewEncoder(w).Encode(models.Response {
-				Status: 1,
-				Type: "Onboarding",
-				Message: "Unable to create user",
-			})
+			msg := "Unable to create user"
+			models.CreateError(w, http.StatusBadGateway, msg, err)
 			return
 		} 
 
 		// create a cookie to completely authenticate user
 		err = CreateCookie(w, app, "AuthToken", user.Id)
 		if err != nil {
-			log.Println(err.Error())
-			json.NewEncoder(w).Encode(models.Response {
-				Status: 1,
-				Type: "Login",
-				Message: "Failed to login",
-			})
+			msg := "Failed to login"
+			models.CreateError(w, http.StatusUnprocessableEntity, msg, err)
 			return
 		}
 
 		// return successful onboarding message
-		json.NewEncoder(w).Encode(models.Response {
-			Status: 0,
-			Type: "Onboarding",
-			Message: "User successfully created",
-		})
+		msg := "User successfully onboared"
+		models.CreateResponse(w, msg, nil)
 	}
 }
 
@@ -94,43 +80,29 @@ func Login(app *application.App) httprouter.Handle {
 		var actualUser models.User
 		err := authUser.GetCredentials(app, &actualUser)
 		if err != nil {
-			json.NewEncoder(w).Encode(models.Response {
-				Status: 1,
-				Type: "Login",
-				Message: "User Invalid",
-			})
+			msg := "User not found"
+			models.CreateError(w, http.StatusNotFound, msg, err)
 			return
 		}
 
 		// check to see if passwords match
 		if match := HashMatch(authUser.Password, actualUser.Password); !match {
-			log.Println(actualUser.Password)
-			json.NewEncoder(w).Encode(models.Response {
-				Status: 1,
-				Type: "Login",
-				Message: "Password Incorrect",
-			})
+			msg := "Password incorrect"
+			models.CreateError(w, http.StatusUnauthorized, msg, nil)
 			return
 		}
 
 		// create a cookie to completely authenticate user
 		err = CreateCookie(w, app, "AuthToken", actualUser.Id)
 		if err != nil {
-			log.Println(err.Error())
-			json.NewEncoder(w).Encode(models.Response {
-				Status: 1,
-				Type: "Login",
-				Message: "Failed to login",
-			})
+			msg := "Failed to login"
+			models.CreateError(w, http.StatusUnprocessableEntity, msg, err)
 			return
 		} 
 
 		// send successful authentication message to client
-		json.NewEncoder(w).Encode(models. Response {
-			Status: 0,
-			Type: "Login",
-			Message: "User successfully authenticated",
-		})
+		msg := "User successfully authenticated"
+		models.CreateResponse(w, msg, nil)
 	}
 }
 
@@ -139,18 +111,12 @@ func Login(app *application.App) httprouter.Handle {
 func Logout(app *application.App) httprouter.Handle {
 	return func (w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		if len(r.Cookies()) < 1 {
-			json.NewEncoder(w).Encode(models.Response {
-				Status: 1,
-				Type: "Sign out",
-				Message: "User already signed out",
-			})
+			msg := "User already signed out"
+			models.CreateError(w, http.StatusBadRequest, msg, nil)
 		} else {
 			DeleteCookie(w, app, "AuthToken")
-			json.NewEncoder(w).Encode(models.Response {
-				Status: 0,
-				Type: "Sign out",
-				Message: "User successfully signed out",
-			})
+			msg := "User successfully signed out"
+			models.CreateResponse(w, msg, nil)
 		}
 	}
 }
@@ -185,11 +151,8 @@ func DeleteCookie(w http.ResponseWriter, app* application.App, name string) {
 // Function that tests authentication state
 func AuthCheck() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		json.NewEncoder(w).Encode(models.Response {
-			Status: 0,
-			Type: "Authentication",
-			Message: "This app is authenticated",
-		})
+		msg := "This app is authenticated"
+		models.CreateResponse(w, msg, nil)
 	}
 }
 

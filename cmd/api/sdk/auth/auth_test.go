@@ -37,21 +37,17 @@ func TestOnboardingSuccess(t *testing.T) {
 	// create body of function
 	body := getBody()
 	if res := test.Post("/onboard", auth.Onboard(app), body); res.Code != http.StatusOK {
-		t.Errorf("handler returned wrong status code, what %v", http.StatusOK)
-	} else {
 		// body response
 		var response models.Response 
 		json.NewDecoder(res.Body).Decode(&response)
-		
+
+		t.Errorf("handler returned wrong status code, what %v", http.StatusOK)
+		t.Error("there was an error in authenticating user:", response.Message)
+	} else {
 		// check if all sql sql expectations were met
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expections: %s", err)
-		}
-	
-		// check if the json response wasn't an error
-		if (response.Status != 0) {
-			t.Error("there was an error in authenticating user:", response.Message)
-		}		
+		}	
 	}
 }
 
@@ -67,21 +63,17 @@ func TestExistingUserError(t *testing.T) {
 
 	// create body of function
 	body := getBody()
-	if res := test.Post("/onboard", auth.Onboard(app), body); res.Code != http.StatusOK {
-		t.Errorf("Handler returned wrong status code, got %v", res.Code)
-	} else {
+	if res := test.Post("/onboard", auth.Onboard(app), body); res.Code != http.StatusNotAcceptable {
 		// body response
 		var response models.Response 
 		json.NewDecoder(res.Body).Decode(&response)
 
+		t.Errorf("Handler returned wrong status code, got %v", res.Code)
+		t.Errorf("Expected %q got %q", "User already exists", response.Message)
+	} else {
 		// check if all sql sql expectations were met
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("There were unfulfilled expections: %s", err)
-		}
-
-		// check if the json response wasn't an error
-		if (response.Message != "User already exists") {
-			t.Errorf("Expected %q got %q", "User already exists", response.Message)
 		}
 	}
 }
@@ -100,21 +92,17 @@ func TestPasswordIncorrect(t *testing.T) {
 	query := `SELECT email, password, id FROM userinfo WHERE email\="smarsh@southpark\.com"`
 	mock.ExpectQuery(query).WillReturnRows(rows)
 
-	if res := test.Post("/login", auth.Login(app), getBody()); res.Code != http.StatusOK {
-		t.Errorf("Handler returned wrong status code, got: %v", res.Code)
-	} else {
+	if res := test.Post("/login", auth.Login(app), getBody()); res.Code != http.StatusUnauthorized{
 		// body response
 		var response models.Response 
 		json.NewDecoder(res.Body).Decode(&response)
 
+		t.Errorf("Handler returned wrong status code, got: %v", res.Code)
+		t.Errorf("Expected %q got %q", "Password Incorrect", response.Message)
+	} else {
 		// check if all sql sql expectations were met
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("There were unfulfilled expections: %s", err)
-		}
-
-		// check if the json response wasn't an error
-		if (response.Message != "Password Incorrect") {
-			t.Errorf("Expected %q got %q", "Password Incorrect", response.Message)
 		}
 	}
 }
@@ -126,21 +114,17 @@ func TestUserInvalid(t *testing.T) {
 	query := `SELECT email, password, id FROM userinfo WHERE email\="smarsh@southpark\.com"`
 	mock.ExpectQuery(query)
 
-	if res := test.Post("/login", auth.Login(app), getBody()); res.Code != http.StatusOK {
-		t.Errorf("Handler returned wrong status code, got: %v", res.Code)
-	} else {
+	if res := test.Post("/login", auth.Login(app), getBody()); res.Code != http.StatusNotFound {
 		// body response
 		var response models.Response 
 		json.NewDecoder(res.Body).Decode(&response)
 
+		t.Errorf("Handler returned wrong status code, got: %v", res.Code)
+		t.Errorf("Expected %q got %q", "User Invalid", response.Message)
+	} else {
 		// check if all sql sql expectations were met
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("There were unfulfilled expections: %s", err)
-		}
-
-		// check if the json response wasn't an error
-		if (response.Message != "User Invalid") {
-			t.Errorf("Expected %q got %q", "User Invalid", response.Message)
 		}
 	}
 }
@@ -151,11 +135,8 @@ func TestUserSignout(t *testing.T) {
 
 	res := test.GetWithCookie("/v0/logout", auth.Logout(app), nil, app, "AuthToken") 
 	
-	var response models.Response
-	json.NewDecoder(res.Body).Decode(&response)
-
-	if response.Status != 0 {
-		t.Error("The cookie was not deleted")
+	if res.Code != http.StatusOK {
+		t.Error("This user was not successfully signed out")
 	}
 }
 
@@ -164,11 +145,7 @@ func TestUserSignoutFailure(t *testing.T) {
 	defer app.DB.Client.Close()
 
 	res := test.Get("/v0/logout", auth.Logout(app), nil)
-	
-	var response models.Response
-	json.NewDecoder(res.Body).Decode(&response)
-
-	if response.Status != 1 {
-		t.Error("This function should not have successfuly executed")
+	if res.Code != http.StatusBadRequest {
+		t.Error("This function should not have successfully executed")
 	}
 }

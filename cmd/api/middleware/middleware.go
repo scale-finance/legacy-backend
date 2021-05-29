@@ -32,7 +32,7 @@ func Authenticate(next httprouter.Handle, app *application.App) httprouter.Handl
 				Status: 1,
 				Type: "Middleware",
 				Message: "Unauthorized User",
-			}); return
+			}); return 
 		} else if len(id) == 0 {
 			w.WriteHeader(http.StatusUnauthorized)
 			log.Println("No access token found")
@@ -69,4 +69,4 @@ func CookieIsValid(r *http.Request, app *application.App, name string) (string, 
 			return issuer, nil
 		}
 	}
-} 
+}

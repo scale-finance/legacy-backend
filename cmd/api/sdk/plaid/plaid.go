@@ -3,6 +3,7 @@ package plaid
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 	"log"
 	"net/http"
 
@@ -35,21 +36,14 @@ func GetPlaidToken(app *application.App) httprouter.Handle {
 		// will return a json resposne reflecting this issue
 		tokenResponse, err := app.Plaid.Client.CreateLinkToken(tokenConfig)
 		if err != nil {
-			log.Println("Error Loading Client:", err)
-			json.NewEncoder(w).Encode(models.Response{
-				Type:    "Link Token",
-				Status:  1,
-				Message: "Failure to load client",
-			})
+			msg := "Failure to load client"
+			models.CreateError(w, http.StatusBadGateway, msg, err)
+			return
 		}
 
 		// when successful returns a result response
-		json.NewEncoder(w).Encode(models.Response{
-			Result:  tokenResponse.LinkToken,
-			Type:    "Link Token",
-			Message: "Successfully recieved link token from plaid",
-			Status:  0,
-		})
+		msg := "Successfully recieved link token from plaid"
+		models.CreateResponse(w, msg, tokenResponse.LinkToken)
 	}
 }
 
@@ -67,12 +61,8 @@ func CreateAccessToken(app *application.App) httprouter.Handle {
 		// request body
 		res, err := app.Plaid.Client.ExchangePublicToken(token.Value)
 		if err != nil {
-			log.Println("Failed create access token", err)
-			json.NewEncoder(w).Encode(models.Response{
-				Status:  1,
-				Type:    "Access Token",
-				Message: "Link token error",
-			})
+			msg := "Failure to excahnge link token"
+			models.CreateError(w, http.StatusBadGateway, msg, err)
 			return
 		}
 
@@ -101,5 +91,68 @@ func CreateAccessToken(app *application.App) httprouter.Handle {
 				Message: "Access Token successfuly created",
 			})
 		}
+	}
+}
+
+// This function will get transactions from the past 2 months from all bank accounts 
+// affiliated with the user. If there is an error with the database retrieval or the
+// plaid client call, this will be reflected in the json response accordingly.
+func GetTransactions(app *application.App) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		w.Header().Set("Content-Type", "application/json")
+
+		// create the user with the id obtained from middleware context
+		user := models.User { Id: fmt.Sprintf("%v", r.Context().Value(models.Key("user"))) }
+
+		tokens, err := user.GetTokens(app)
+		if err != nil {
+			log.Println(err)
+			json.NewEncoder(w).Encode(models.Response {
+				Status: http.StatusBadGateway,
+				Type: "Transaction Retrieval",
+				Message: "There was an error retrieving tokens from database affiliated with user",
+			})
+		}
+
+		const iso8601TimeFormat = "2006-01-02"
+		startDate := time.Now().Add(-30 * 24 * time.Hour).Format(iso8601TimeFormat)
+		endDate := time.Now().Format(iso8601TimeFormat)
+
+		var transactionHistory []plaid.Transaction
+		for i := range tokens {
+			res, err := app.Plaid.Client.GetTransactions(tokens[i].Value, startDate, endDate)
+			if err != nil {
+				log.Println(err)
+				log.Println(tokens[i].Value)
+				json.NewEncoder(w).Encode(models.Response {
+					Status: http.StatusBadGateway,
+					Type: "Token Retrieval",
+					Message: "Failed to retrieve tokens from Plaid client",
+				})
+
+				return
+			}
+
+			transactionHistory = append(transactionHistory, res.Transactions...)
+		}
+
+		transactions, err := json.Marshal(transactionHistory)
+		if err != nil {
+			log.Println(err)
+			json.NewEncoder(w).Encode(models.Response {
+				Status: http.StatusBadGateway,
+				Type: "Token Retrieval",
+				Message: "Failed to retrieve tokens from Plaid client",
+			})
+
+			return
+		}
+
+		json.NewEncoder(w).Encode(models.Response {
+			Status: http.StatusOK,
+			Type: "Transaction Retrieval",
+			Message: "Successfully retrieved transactions from all bank accounts",
+			Result: string(transactions),
+		})
 	}
 }
