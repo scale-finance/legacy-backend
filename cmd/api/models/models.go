@@ -10,11 +10,15 @@ import (
 type Response struct {
 	Status		int			`json:"status"`
 	Message		string		`json:"message"`
-	Type 		string 		`json:"type"`
 	Result		interface{}	`json:"result,omitempty"`
 }
 
+// Function that creates and writes a JSON response that was successfully executed. This 
+// function will alwayrs return the http status 200 (OK), and has the option to return a
+// result which can be any datatype
 func CreateResponse(w http.ResponseWriter, message string, result interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+
 	encoder := json.NewEncoder(w)
 	w.WriteHeader(http.StatusOK)
 	
@@ -27,6 +31,9 @@ func CreateResponse(w http.ResponseWriter, message string, result interface{}) {
 	encoder.Encode(res)
 }
 
+// This function is used to create an error JSON response with custom http statuses. 
+// In addition to the status, this function also takes in an error that will be logged
+// to the system. This error can be nil
 func CreateError(w http.ResponseWriter, status int, message string, system error) {
 	if system != nil {
 		log.Print(system.Error())

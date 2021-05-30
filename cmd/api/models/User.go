@@ -22,7 +22,6 @@ type User struct {
 // query, these issues will be returned
 func (u *User) Create(app *application.App) error {
 	query := "INSERT INTO userinfo(id, firstname, lastname, email, password) VALUES(?,?,?,?,?)"
-	
 	stmt, err := app.DB.Client.Prepare(query)
 	if err != nil {
 		log.Println("Prepare failure")

@@ -13,12 +13,12 @@ import (
 )
 
 var token = models.Token {
-	Value: 	"access-sandbox-620ca9bc-1589-462d-b4b5-4c76ca",
+	Value: 	"access-sandbox-3b6a6577-4c02-4fc3-a213-b8adf828c38f",
 	Id: 	"nothin",
 }
 
 var user = models.User {
-	Id: "goingdowntosouthpark",
+	Id: "testvalue",
 }
 
 func TestInvalidClient(t *testing.T) {
@@ -66,15 +66,15 @@ func TestLinkTokenRetrieval(t *testing.T) {
 	}
 }
 
-func GetTransactions(t *testing.T) {
+func TestGetTransactions(t *testing.T) {
 	app, mock := test.GetMockApp()
 	defer app.DB.Client.Close()
 
-	sqlmock.NewRows([]string{"id", "token", "itemID"}).
+	rows := sqlmock.NewRows([]string{"id", "token", "itemID"}).
 		AddRow(user.Id, token.Value, token.Id)
 	
-	query := `SELECT id, token, itemID FROM plaidtokens WHERE id\="goingdowntosouthpark"`
-	mock.ExpectQuery(query)
+	query := `SELECT id, token, itemID FROM plaidtokens WHERE id\="testvalue"`
+	mock.ExpectQuery(query).WillReturnRows(rows)
 
 	res := test.GetWithCookie(
 		"/v0/getTransactions",
@@ -83,13 +83,12 @@ func GetTransactions(t *testing.T) {
 		app,
 		"AuthToken",
 	)
-	if res.Code != http.StatusOK {
-		t.Errorf("This call returned the wrong http status. Expected %v, got %v", http.StatusOK, res.Code)
-	}
 
-	var response models.Response
-	json.NewDecoder(res.Body).Decode(&response)
-	if response.Result == nil {
-		t.Error("The call did not return the intended result")
+	if res.Code != http.StatusOK {
+		var response models.Response
+		json.NewDecoder(res.Body).Decode(&response)
+
+		t.Errorf("This call returned the wrong http status. Expected %v, got %v", http.StatusOK, res.Code)
+		t.Error("The call did not return the intended result, instead", response.Message)
 	}
 }
