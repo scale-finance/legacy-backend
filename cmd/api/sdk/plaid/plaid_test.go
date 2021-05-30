@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"testing"
+	"bytes"
 
 	m "github.com/elopez00/scale-backend/cmd/api/middleware"
 	p "github.com/elopez00/scale-backend/cmd/api/sdk/plaid"
@@ -17,14 +18,19 @@ var token = models.Token {
 	Id: 	"nothin",
 }
 
+var publicToken = models.Token {
+	Value: "public-sandbox-4d532c06-b9b5-4a18-906a-df480f320cc9",
+}
+
 var user = models.User {
 	Id: "testvalue",
 }
 
-func TestInvalidClient(t *testing.T) {
+// * Test Functions will invalid Plaid clients *
+
+func TestLinkTokenInvalidClient(t *testing.T) {
 	app, _ := test.GetMockApp() 
 	defer app.DB.Client.Close()
-
 
 	if res := test.GetWithCookie(
 		"/v0/getLinkToken",
@@ -44,7 +50,53 @@ func TestInvalidClient(t *testing.T) {
 	}
 }
 
-func TestLinkTokenRetrieval(t *testing.T) {
+func TestExchangePublicTokenInvalidClient(t *testing.T) {
+	app, _ := test.GetMockApp()
+	defer app.DB.Client.Close()
+
+	body, _ := json.Marshal(publicToken)
+
+	res := test.GetWithCookie(
+		"/v0/exchangePublicToken",
+		m.Authenticate(p.ExchangePublicToken(app),app),
+		bytes.NewBuffer(body),
+		app,
+		"AuthToken",
+	)
+
+	if res.Code != http.StatusBadGateway {
+		var response models.Response
+		json.NewDecoder(res.Body).Decode(&response)
+
+		t.Errorf("Expected %v, got %v, with an error message: %v", http.StatusBadGateway, res.Code, response.Message)
+	}
+}
+
+func TestGetTransactionsInvalidClient(t *testing.T) {
+	app, _ := test.GetMockApp()
+	defer app.DB.Client.Close()
+
+	body, _ := json.Marshal(publicToken)
+
+	res := test.GetWithCookie(
+		"/v0/exchangePublicToken",
+		m.Authenticate(p.GetTransactions(app), app),
+		bytes.NewBuffer(body),
+		app,
+		"AuthToken",
+	)
+
+	if res.Code != http.StatusBadGateway {
+		var response models.Response
+		json.NewDecoder(res.Body).Decode(&response)
+
+		t.Errorf("Expected %v, got %v, with an error message: %v", http.StatusBadGateway, res.Code, response.Message)
+	}
+}
+
+// * Test calls with valid Plaid Clients *
+
+func TestLinkTokenSuccess(t *testing.T) {
 	app, _ := test.GetPlaidMockApp()
 	defer app.DB.Client.Close()
 
@@ -90,5 +142,27 @@ func TestGetTransactions(t *testing.T) {
 
 		t.Errorf("This call returned the wrong http status. Expected %v, got %v", http.StatusOK, res.Code)
 		t.Error("The call did not return the intended result, instead", response.Message)
+	}
+}
+
+func TestExchangePublicTokenInvalidToken(t *testing.T) {
+	app, _ := test.GetMockApp()
+	defer app.DB.Client.Close()
+
+	body, _ := json.Marshal(publicToken)
+
+	res := test.GetWithCookie(
+		"/v0/exchangePublicToken",
+		p.ExchangePublicToken(app),
+		bytes.NewBuffer(body),
+		app,
+		"AuthToken",
+	)
+
+	if res.Code != http.StatusBadGateway {
+		var response models.Response
+		json.NewDecoder(res.Body).Decode(&response)
+
+		t.Errorf("Expected %v, got %v, with an error message: %v", http.StatusBadGateway, res.Code, response.Message)
 	}
 }

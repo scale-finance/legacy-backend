@@ -50,8 +50,7 @@ func GetPlaidToken(app *application.App) httprouter.Handle {
 // stored in the database for cross-platform connection to users' bank. If for
 // whatever reason there is a problem with the client or public token, their
 // are json responses and logs that will adequately reflect all issues
-// ! Not tested yet
-func CreateAccessToken(app *application.App) httprouter.Handle {
+func ExchangePublicToken(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		var token models.Token
 		json.NewDecoder(r.Body).Decode(&token)
@@ -92,14 +91,16 @@ func CreateAccessToken(app *application.App) httprouter.Handle {
 func GetTransactions(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		// create the user with the id obtained from middleware context
-		user := models.User { Id: fmt.Sprintf("%v", r.Context().Value(models.Key("user"))) }
+		userId := fmt.Sprintf("%v", r.Context().Value(models.Key("user"))) 
 
-		tokens, err := user.GetTokens(app)
+		// gets all tokens affiliated with user
+		tokens, err := models.GetTokens(app, userId)
 		if err != nil {
 			msg := "There was an error retrieving tokens from database affiliated with user"
 			models.CreateError(w, http.StatusBadGateway, msg, err)
 		}
 
+		// determines the ending and starting dates to retrieve transactions
 		const iso8601TimeFormat = "2006-01-02"
 		startDate := time.Now().Add(-30 * 24 * time.Hour).Format(iso8601TimeFormat)
 		endDate := time.Now().Format(iso8601TimeFormat)

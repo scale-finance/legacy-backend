@@ -60,33 +60,3 @@ func (u *User) GetCredentials(app *application.App, actualUser *User) error {
 
 	return nil
 }
-
-// Method that returns every token associated to the user in the form of a slice of Token pointers.
-// Any problem with the query or database operatinon will be reflected as an error and the slice
-// will be returned as nil.
-func (u *User) GetTokens(app *application.App) ([]*Token, error) {
-	query := fmt.Sprintf("SELECT id, token, itemID FROM plaidtokens WHERE id=%q", u.Id)
-	
-	// get rows from query
-	rows, err := app.DB.Client.Query(query)
-	if err != nil {
-		return nil, err
-	}
-
-	// create slice of token pointers
-	tokens := make([]*Token, 0)
-	var placeholder string // ! this variable is only here because I don't know how to test without it
-	
-	// loop over all the rows and create a token for each
-	for rows.Next() {
-		token := new(Token)
-		if err := rows.Scan(&placeholder, &token.Value, &token.Id); err != nil {
-			return nil, err
-		}
-
-		// each token created is to be appended to the slice
-		tokens = append(tokens, token)
-	}
-
-	return tokens, nil
-}

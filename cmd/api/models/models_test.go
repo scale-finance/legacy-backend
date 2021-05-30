@@ -130,7 +130,7 @@ func TestGetTokens(t *testing.T) {
 	query := `SELECT id, token, itemID FROM plaidtokens WHERE id\="goingdowntosouthpark"`
 	mock.ExpectQuery(query).WillReturnRows(rows)
 
-	tokens, _ := user.GetTokens(app)
+	tokens, _ := models.GetTokens(app, user.Id)
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("There were unfulfilled expectations: %s", err)
