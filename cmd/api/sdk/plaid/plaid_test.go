@@ -94,25 +94,25 @@ func TestGetTransactionsInvalidClient(t *testing.T) {
 	}
 }
 
-// func TestGetBalancesInvalidClient(t *testing.T) {
-// 	app, _ := test.GetMockApp()
-// 	defer app.DB.Client.Close()
+func TestGetBalancesInvalidClient(t *testing.T) {
+	app, _ := test.GetMockApp()
+	defer app.DB.Client.Close()
 
-// 	res := test.GetWithCookie(
-// 		"/v0/getBalances",
-// 		m.Authenticate(p.GetBalance(app), app),
-// 		nil,
-// 		app,
-// 		"AuthToken",
-// 	)
+	res := test.GetWithCookie(
+		"/v0/getBalances",
+		m.Authenticate(p.GetBalance(app), app),
+		nil,
+		app,
+		"AuthToken",
+	)
 
-// 	if res.Code != http.StatusBadGateway {
-// 		var response models.Response
-// 		json.NewDecoder(res.Body).Decode(&response)
+	if res.Code != http.StatusBadGateway {
+		var response models.Response
+		json.NewDecoder(res.Body).Decode(&response)
 
-// 		t.Errorf("Expected %v, got %v, with an error message: %v", http.StatusBadGateway, res.Code, response.Message)
-// 	}
-// }
+		t.Errorf("Expected %v, got %v, with an error message: %v", http.StatusBadGateway, res.Code, response.Message)
+	}
+}
 
 // * Test calls with valid Plaid Clients *
 
@@ -165,36 +165,38 @@ func TestGetTransactions(t *testing.T) {
 	}
 }
 
-// func TestGetBalances(t *testing.T) {
-// 	app, mock := test.GetMockApp()
-// 	defer app.DB.Client.Close()
+func TestGetBalances(t *testing.T) {
+	app, mock := test.GetMockApp()
+	defer app.DB.Client.Close()
 
-// 	// mock the database retrieval
-// 	rows := sqlmock.NewRows([]string{"id", "token", "itemID"}).
-// 		AddRow(user.Id, token.Value, token.Id)
+	// mock the database retrieval
+	rows := sqlmock.NewRows([]string{"id", "token", "itemID"}).
+		AddRow(user.Id, token.Value, token.Id)
 
-// 	query := `SELECT id, token, itemID FROM plaidtokens WHERE id\="testvalue"`
-// 	mock.ExpectQuery(query).WillReturnRows(rows)
+	query := `SELECT id, token, itemID FROM plaidtokens WHERE id\="testvalue"`
+	mock.ExpectQuery(query).WillReturnRows(rows)
 
-// 	res := test.GetWithCookie(
-// 		"/v0/getBalance",
-// 		m.Authenticate(p.GetBalance(app), app),
-// 		nil,
-// 		app,
-// 		"AuthToken",
-// 	)
+	res := test.GetWithCookie(
+		"/v0/getBalance",
+		m.Authenticate(p.GetBalance(app), app),
+		nil,
+		app,
+		"AuthToken",
+	)
 
-// 	var response models.Response
-// 	json.NewDecoder(res.Body).Decode(&response)
+	var response models.Response
+	json.NewDecoder(res.Body).Decode(&response)
 
-// 	if res.Code != http.StatusOK {
-// 		t.Errorf("There was an error getting account balances, expected 200, got: %v, with error message %v", res.Code, response)
-// 	}
+	if res.Code != http.StatusOK {
+		t.Errorf("There was an error getting account balances, expected 200, got: %v, with error message %v", res.Code, response)
+		return
+	}
 
-// 	if response.Result == nil {
-// 		t.Error("The call was successful, but the function did not return a valid response")
-// 	}
-// }
+	if response.Result == nil {
+		t.Error("The call was successful, but the function did not return a valid response")
+		return
+	}
+}
 
 // * Testing error messages
 
@@ -220,22 +222,22 @@ func TestExchangePublicTokenInvalidToken(t *testing.T) {
 	}
 }
 
-// func TestGetBalancesInvalidToken(t *testing.T) {
-// 	app, _ := test.GetMockApp()
-// 	defer app.DB.Client.Close()
+func TestGetBalancesInvalidToken(t *testing.T) {
+	app, _ := test.GetMockApp()
+	defer app.DB.Client.Close()
 
-// 	res := test.GetWithCookie(
-// 		"/v0/getBalances",
-// 		p.GetBalance(app),
-// 		nil,
-// 		app,
-// 		"AuthToken",
-// 	)
+	res := test.GetWithCookie(
+		"/v0/getBalances",
+		p.GetBalance(app),
+		nil,
+		app,
+		"AuthToken",
+	)
 
-// 	if res.Code != http.StatusBadGateway {
-// 		var response models.Response
-// 		json.NewDecoder(res.Body).Decode(&response)
+	if res.Code != http.StatusBadGateway {
+		var response models.Response
+		json.NewDecoder(res.Body).Decode(&response)
 
-// 		t.Errorf("Expected %v, got %v, with an error message: %v", http.StatusBadGateway, res.Code, response.Message)
-// 	}
-// }
+		t.Errorf("Expected %v, got %v, with an error message: %v", http.StatusBadGateway, res.Code, response.Message)
+	}
+}

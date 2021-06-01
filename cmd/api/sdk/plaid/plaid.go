@@ -139,30 +139,10 @@ func GetBalance(app *application.App) httprouter.Handle {
 			models.CreateError(w, http.StatusBadGateway, msg, err)
 		}
 
-		// define a struct for balance types
-		type BType struct {
-			Current		float64		`json:"current"`
-			Name		string		`json:"name"`
-			Limit		float64		`json:"limit,omitempty"`
-		}
+		// balance object definition
+		var balance models.Balance
 
-		// define a struct for balance totals
-		type BTotal struct {
-			Liquid		float64		`json:"liquid"`
-			Credit		float64		`json:"credit"`
-			Loan		float64		`json:"loan"`
-			Total		float64		`json:"total"`
-		}
-
-		// define a struct for the balance response
-		type Balance struct {
-			Liquid		[]BType		`json:"liquid"`
-			Credit		[]BType		`json:"credit"`
-			Loan		[]BType		`json:"loan"`
-			Net			BTotal		`json:"net"`
-		}
-
-		var balance Balance
+		// loop through all tokens
 		for i := range tokens {
 			// get balance response
 			res, err := app.Plaid.Client.GetBalances(tokens[i].Value)
@@ -176,7 +156,7 @@ func GetBalance(app *application.App) httprouter.Handle {
 				// determine what type it is and add it to the response
 				switch(res.Accounts[j].Type) {
 				case "depository": { 
-					balance.Liquid = append(balance.Liquid, BType { 
+					balance.Liquid = append(balance.Liquid, models.BType { 
 						Current: 	res.Accounts[j].Balances.Current,
 						Name:		res.Accounts[j].Name,
 					})
@@ -184,7 +164,7 @@ func GetBalance(app *application.App) httprouter.Handle {
 					balance.Net.Total += res.Accounts[j].Balances.Current
 				}  
 				case "credit": {
-					balance.Credit = append(balance.Credit, BType { 
+					balance.Credit = append(balance.Credit, models.BType { 
 						Current: 	res.Accounts[j].Balances.Current,
 						Name:		res.Accounts[j].Name,
 						Limit: 		res.Accounts[j].Balances.Limit,
@@ -193,7 +173,7 @@ func GetBalance(app *application.App) httprouter.Handle {
 					balance.Net.Total -= res.Accounts[j].Balances.Current
 				}
 				case "loan": {
-					balance.Loan = append(balance.Loan, BType { 
+					balance.Loan = append(balance.Loan, models.BType { 
 						Current: 	res.Accounts[j].Balances.Current,
 						Name:		res.Accounts[j].Name,
 					})  
@@ -203,5 +183,9 @@ func GetBalance(app *application.App) httprouter.Handle {
 				}
 			}
 		}
+
+		// return balance object in result of response
+		msg := "Successfully retrieved balance"
+		models.CreateResponse(w, msg, balance)
 	}
 }

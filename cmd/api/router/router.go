@@ -16,6 +16,7 @@ func Get(app *app.App) *httprouter.Router {
 	mux.POST("/v0/exchangePublicToken", m.Authenticate(p.ExchangePublicToken(app), app))
 	mux.GET("/v0/getLinkToken", m.Authenticate(p.GetPlaidToken(app), app))
 	mux.GET("/v0/getTransactions", m.Authenticate(p.GetTransactions(app), app))
+	mux.GET("/v0/getBalances", m.Authenticate(p.GetBalance(app), app))
 	mux.GET("/v0/logout", auth.Logout(app))
 	mux.GET("/v0/", m.Authenticate(auth.AuthCheck(), app))
 
