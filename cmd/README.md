@@ -1,1 +1,1 @@
-# TODO document this
+# CMD contains all program executables

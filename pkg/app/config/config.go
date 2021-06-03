@@ -37,6 +37,7 @@ func Get() *Config {
 	return config
 }
 
+// Gets test configuartion
 func GetTest() *Config {
 	config := &Config {
 		plaid: map[string]string {
