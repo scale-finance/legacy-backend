@@ -78,21 +78,21 @@ func ExchangePublicToken(app *application.App) httprouter.Handle {
 			msg := "Failure to create access token"
 			models.CreateError(w, http.StatusBadGateway, msg, err)
 			return
-		} 
-		
+		}
+
 		msg := "Access token created successfully"
 		models.CreateResponse(w, msg, nil)
 	}
 }
 
-// This function will get transactions from the past 2 months from all bank accounts 
+// This function will get transactions from the past 2 months from all bank accounts
 // affiliated with the user. If there is an error with the database retrieval or the
 // plaid client call, this will be reflected in the json response accordingly.
 // TODO make function get transactions that will be seen with budget restrictions
 func GetTransactions(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		// create the user with the id obtained from middleware context
-		userId := fmt.Sprintf("%v", r.Context().Value(models.Key("user"))) 
+		userId := fmt.Sprintf("%v", r.Context().Value(models.Key("user")))
 
 		// gets all tokens affiliated with user
 		tokens, err := models.GetTokens(app, userId)
@@ -130,7 +130,7 @@ func GetTransactions(app *application.App) httprouter.Handle {
 func GetBalance(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		// create the user with the id obtained from middleware context
-		userId := fmt.Sprintf("%v", r.Context().Value(models.Key("user"))) 
+		userId := fmt.Sprintf("%v", r.Context().Value(models.Key("user")))
 
 		// get all tokens with the user id
 		tokens, err := models.GetTokens(app, userId)
@@ -150,36 +150,39 @@ func GetBalance(app *application.App) httprouter.Handle {
 				msg := "Error retrieving balance from client"
 				models.CreateError(w, http.StatusBadGateway, msg, err)
 			}
-			
+
 			// loop through all accounts related to that token
 			for j := range res.Accounts {
 				// determine what type it is and add it to the response
-				switch(res.Accounts[j].Type) {
-				case "depository": { 
-					balance.Liquid = append(balance.Liquid, models.BType { 
-						Current: 	res.Accounts[j].Balances.Current,
-						Name:		res.Accounts[j].Name,
-					})
-					balance.Net.Liquid += res.Accounts[j].Balances.Current
-					balance.Net.Total += res.Accounts[j].Balances.Current
-				}  
-				case "credit": {
-					balance.Credit = append(balance.Credit, models.BType { 
-						Current: 	res.Accounts[j].Balances.Current,
-						Name:		res.Accounts[j].Name,
-						Limit: 		res.Accounts[j].Balances.Limit,
-					})  
-					balance.Net.Credit += res.Accounts[j].Balances.Current
-					balance.Net.Total -= res.Accounts[j].Balances.Current
-				}
-				case "loan": {
-					balance.Loan = append(balance.Loan, models.BType { 
-						Current: 	res.Accounts[j].Balances.Current,
-						Name:		res.Accounts[j].Name,
-					})  
-					balance.Net.Loan += res.Accounts[j].Balances.Current
-					balance.Net.Total -= res.Accounts[j].Balances.Current
-				}
+				switch res.Accounts[j].Type {
+				case "depository":
+					{
+						balance.Liquid = append(balance.Liquid, models.BType{
+							Current: res.Accounts[j].Balances.Current,
+							Name:    res.Accounts[j].Name,
+						})
+						balance.Net.Liquid += res.Accounts[j].Balances.Current
+						balance.Net.Total += res.Accounts[j].Balances.Current
+					}
+				case "credit":
+					{
+						balance.Credit = append(balance.Credit, models.BType{
+							Current: res.Accounts[j].Balances.Current,
+							Name:    res.Accounts[j].Name,
+							Limit:   res.Accounts[j].Balances.Limit,
+						})
+						balance.Net.Credit += res.Accounts[j].Balances.Current
+						balance.Net.Total -= res.Accounts[j].Balances.Current
+					}
+				case "loan":
+					{
+						balance.Loan = append(balance.Loan, models.BType{
+							Current: res.Accounts[j].Balances.Current,
+							Name:    res.Accounts[j].Name,
+						})
+						balance.Net.Loan += res.Accounts[j].Balances.Current
+						balance.Net.Total -= res.Accounts[j].Balances.Current
+					}
 				}
 			}
 		}

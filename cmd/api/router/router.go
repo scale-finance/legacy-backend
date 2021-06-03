@@ -1,11 +1,11 @@
 package router
 
 import (
-	"github.com/julienschmidt/httprouter"
-	"github.com/elopez00/scale-backend/cmd/api/sdk/auth"
-	"github.com/elopez00/scale-backend/pkg/app"
-	p "github.com/elopez00/scale-backend/cmd/api/sdk/plaid"
 	m "github.com/elopez00/scale-backend/cmd/api/middleware"
+	"github.com/elopez00/scale-backend/cmd/api/sdk/auth"
+	p "github.com/elopez00/scale-backend/cmd/api/sdk/plaid"
+	"github.com/elopez00/scale-backend/pkg/app"
+	"github.com/julienschmidt/httprouter"
 )
 
 // Gets api routes used in server

@@ -32,21 +32,24 @@ func TestLinkTokenInvalidClient(t *testing.T) {
 	app, _ := test.GetMockApp()
 	defer app.DB.Client.Close()
 
-	if res := test.GetWithCookie(
+	res := test.GetWithCookie(
 		"/v0/getLinkToken",
 		m.Authenticate(p.GetPlaidToken(app), app),
 		nil,
 		app,
 		"AuthToken",
-	); res.Code != http.StatusBadGateway {
-		t.Errorf("Failed get. Expected %v, instead got %v", http.StatusOK, res.Code)
-	} else {
-		var response models.Response
-		json.NewDecoder(res.Body).Decode(&response)
+	)
 
-		if response.Message != "Failure to load client" {
-			t.Errorf("Link token shouldn't have been extracted, instead recieved error: %v", response.Message)
-		}
+	if res.Code != http.StatusBadGateway {
+		t.Errorf("Failed get. Expected %v, instead got %v", http.StatusOK, res.Code)
+		return
+	} 
+
+	var response models.Response
+	json.NewDecoder(res.Body).Decode(&response)
+	
+	if response.Message != "Failure to load client" {
+		t.Errorf("Link token shouldn't have been extracted, instead recieved error: %v", response.Message)
 	}
 }
 
