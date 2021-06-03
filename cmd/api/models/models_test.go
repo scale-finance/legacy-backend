@@ -8,18 +8,25 @@ import (
 	"github.com/elopez00/scale-backend/pkg/test"
 )
 
-var user = models.User {
-	Id: "goingdowntosouthpark",
+var user = models.User{
+	Id:        "goingdowntosouthpark",
 	FirstName: "Stan",
-	LastName: "Marsh",
-	Email: "smarsh@southpark.com",
-	Password: "southpark",
+	LastName:  "Marsh",
+	Email:     "smarsh@southpark.com",
+	Password:  "southpark",
 }
 
-var token = models.Token {
+var token = models.Token{
 	Value: "randomaccess",
-	Id: "randomid",
+	Id:    "randomid",
 }
+
+var whitelist = models.WhiteListItem{
+	Category: "Shopping",
+	Name:     "Source 1",
+}
+
+// * user tests
 
 func TestUserCreate(t *testing.T) {
 	app, mock := test.GetMockApp()
@@ -29,20 +36,20 @@ func TestUserCreate(t *testing.T) {
 	mock.ExpectPrepare(query).
 		ExpectExec().
 		WithArgs(user.Id, user.FirstName, user.LastName, user.Email, user.Password).
-		WillReturnResult(sqlmock.NewResult(0,0))
-	
-	
+		WillReturnResult(sqlmock.NewResult(0, 0))
+
 	user.Create(app)
 	if err := mock.ExpectationsWereMet(); err != nil {
-        t.Errorf("there were unfulfilled expections: %s", err)
-    }
+		t.Errorf("there were unfulfilled expections: %s", err)
+		return
+	}
 }
 
 func TestUserDoesExists(t *testing.T) {
 	app, mock := test.GetMockApp()
 	defer app.DB.Client.Close()
 
-	rows := sqlmock.NewRows([]string{"id","email"}).
+	rows := sqlmock.NewRows([]string{"id", "email"}).
 		AddRow(user.Id, user.Email)
 
 	query := `SELECT firstname, email FROM userinfo WHERE email\="smarsh@southpark\.com"`
@@ -51,8 +58,11 @@ func TestUserDoesExists(t *testing.T) {
 	exists := user.Exists(app)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
-	} else if !exists {
+		return
+	}
+	if !exists {
 		t.Error("The user should exist")
+		return
 	}
 }
 
@@ -66,8 +76,12 @@ func TestUserDoesNotExist(t *testing.T) {
 	exists := user.Exists(app)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("There were unfulfilled expectations: %s", err)
-	} else if exists {
+		return
+	}
+
+	if exists {
 		t.Error("User sould not exist")
+		return
 	}
 }
 
@@ -84,8 +98,12 @@ func TestSuccessfulGetCredential(t *testing.T) {
 	var actualUser models.User
 	if err := user.GetCredentials(app, &actualUser); err != nil {
 		t.Errorf("Process should have run without errors, instead got: %v", err.Error())
-	} else if actualUser.Id != user.Id || actualUser.Password != user.Password {
+		return
+	}
+
+	if actualUser.Id != user.Id || actualUser.Password != user.Password {
 		t.Error("Credentials are incorrect")
+		return
 	}
 }
 
@@ -99,8 +117,11 @@ func TestUnsuccessfulGetCredential(t *testing.T) {
 	var actualUser models.User
 	if err := user.GetCredentials(app, &actualUser); err == nil {
 		t.Error("This process should have failed and returned an error")
+		return
 	}
 }
+
+// * token tests
 
 func TestTokenAdd(t *testing.T) {
 	app, mock := test.GetMockApp()
@@ -111,12 +132,14 @@ func TestTokenAdd(t *testing.T) {
 		ExpectPrepare(query).
 		ExpectExec().
 		WithArgs(user.Id, token.Value, token.Id).
-		WillReturnResult(sqlmock.NewResult(0,0))
+		WillReturnResult(sqlmock.NewResult(0, 0))
 
 	token.Add(app, user.Id)
+
 	if err := mock.ExpectationsWereMet(); err != nil {
-        t.Errorf("there were unfulfilled expections: %s", err)
-    }
+		t.Errorf("there were unfulfilled expections: %s", err)
+		return
+	}
 }
 
 func TestGetTokens(t *testing.T) {
@@ -134,9 +157,67 @@ func TestGetTokens(t *testing.T) {
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("There were unfulfilled expectations: %s", err)
+		return
 	}
-	
+
 	if len(tokens) == 0 {
 		t.Error("The function did not return the tokens")
+		return
 	}
 }
+
+// * budget tests
+
+// func TestAddWhiteList(t *testing.T) {
+// 	app, mock := test.GetMockApp()
+// 	defer app.DB.Client.Close()
+
+// 	query := `INSERT INTO whitelist\(id, category, name\) VALUES \(\?,\?,\?\), (\?,\?,\?\)`
+// 	mock.
+// 		ExpectPrepare(query).
+// 		ExpectExec().
+// 		WithArgs(user.Id, whitelist.Category, whitelist.Name, user.Id, whitelist.Category, whitelist.Name).
+// 		WillReturnResult(sqlmock.NewResult(0, 0))
+
+// 	list := []models.WhiteListItem {
+// 		{ whitelist.Category, whitelist.Name, },
+// 		{ whitelist.Category, whitelist.Name, },
+// 	}
+
+// 	if err := models.AddWhiteList(app, user.Id, list); err != nil {
+// 		t.Error("Error inserting information to database:", err)
+// 		return
+// 	}
+
+// 	if err := mock.ExpectationsWereMet(); err != nil {
+// 		t.Error("There were unfulfilled expectations:", err)
+// 		return
+// 	}
+// }
+
+// func TestAddCategory(t *testing.T) {
+// 	app, mock := test.GetMockApp() 
+// 	defer app.DB.Client.Close()
+	
+// 	query := `INSERT INTO categories\(id, name, budget\) VALUES \(\?,\?,\?\), \(\?,\?,\?\)`
+// 	mock.
+// 		ExpectPrepare(query).
+// 		ExpectExec().
+// 		WithArgs(user.Id, whitelist.Category, 100, user.Id, "shopping", 200).
+// 		WillReturnResult(sqlmock.NewResult(0, 0))
+	
+// 	list := []models.Category {
+// 		{ whitelist.Category, 100, },
+// 		{ "shopping", 200, },
+// 	}
+
+// 	if err := models.AddCategories(app, user.Id, list, nil); err != nil {
+// 		t.Error("Error inserting data into data:", err)
+// 		return
+// 	}
+
+// 	if err := mock.ExpectationsWereMet(); err != nil {
+// 		t.Error("There were unfulfilled expectations:", err)
+// 		return
+// 	}
+// }
