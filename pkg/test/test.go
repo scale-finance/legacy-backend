@@ -14,6 +14,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+// TODO document this package
+
 func GetMockApp() (*application.App, sqlmock.Sqlmock) {
 	db, mock, _ := sqlmock.New()
 	
@@ -54,8 +56,8 @@ func Get(endpoint string, handler httprouter.Handle, body io.Reader) *httptest.R
 	return res
 }
 
-func GetWithCookie(endpoint string, handler httprouter.Handle, body io.Reader, app *application.App, name string) *httptest.ResponseRecorder {
-	req, _ := http.NewRequest("GET", endpoint, body)
+func GetWithCookie(endpoint string, handler httprouter.Handle, app *application.App, name string) *httptest.ResponseRecorder {
+	req, _ := http.NewRequest("GET", endpoint, nil)
 	token, _ := auth.GenerateJWT(app, "testvalue")
 	req.AddCookie(&http.Cookie {
 		Name: name,
@@ -67,7 +69,22 @@ func GetWithCookie(endpoint string, handler httprouter.Handle, body io.Reader, a
 	mux.GET(endpoint, handler)
 
 	res := ExecuteRequest(req, mux)
+	return res
+}
 
+func PostWithCookie(endpoint string, handler httprouter.Handle, body io.Reader, app *application.App, name string) *httptest.ResponseRecorder {
+	req, _ := http.NewRequest("POST", endpoint, body)
+	token, _ := auth.GenerateJWT(app, "testvalue")
+	req.AddCookie(&http.Cookie {
+		Name: name,
+		Value: token,
+		Expires: time.Now().Add(365 * 24 * time.Hour),
+	})
+
+	mux := httprouter.New()
+	mux.POST(endpoint, handler)
+
+	res := ExecuteRequest(req, mux)
 	return res
 }
 

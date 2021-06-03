@@ -133,7 +133,7 @@ func TestUserSignout(t *testing.T) {
 	app, _ := test.GetMockApp()
 	defer app.DB.Client.Close()
 
-	res := test.GetWithCookie("/v0/logout", auth.Logout(app), nil, app, "AuthToken") 
+	res := test.GetWithCookie("/v0/logout", auth.Logout(app), app, "AuthToken") 
 	
 	if res.Code != http.StatusOK {
 		t.Error("This user was not successfully signed out")

@@ -17,9 +17,7 @@ import (
 // a new user in the database (given one does not already exist with the same credentials)
 // and will give each user a unique ID and a hashed password for further authentication
 func Onboard(app *application.App) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w.Header().Set("Content-Type", "application/json")
-		
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {		
 		// get user input from body
 		var user models.User
 		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -66,8 +64,6 @@ func Onboard(app *application.App) httprouter.Handle {
 // on creating a jwt token
 func Login(app *application.App) httprouter.Handle {
 	return func (w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w.Header().Set("Content-Type", "application/json")
-
 		// grabs input user from body
 		var authUser models.User
 		if err := json.NewDecoder(r.Body).Decode(&authUser); err != nil {

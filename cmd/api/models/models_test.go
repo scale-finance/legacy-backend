@@ -168,56 +168,58 @@ func TestGetTokens(t *testing.T) {
 
 // * budget tests
 
-// func TestAddWhiteList(t *testing.T) {
-// 	app, mock := test.GetMockApp()
-// 	defer app.DB.Client.Close()
+func TestAddWhiteList(t *testing.T) {
+	app, mock := test.GetMockApp()
+	defer app.DB.Client.Close()
 
-// 	query := `INSERT INTO whitelist\(id, category, name\) VALUES \(\?,\?,\?\), (\?,\?,\?\)`
-// 	mock.
-// 		ExpectPrepare(query).
-// 		ExpectExec().
-// 		WithArgs(user.Id, whitelist.Category, whitelist.Name, user.Id, whitelist.Category, whitelist.Name).
-// 		WillReturnResult(sqlmock.NewResult(0, 0))
+	query := `INSERT INTO whitelist\(id, category, name\) VALUES \(\?,\?,\?\), \(\?,\?,\?\)`
+	mock.
+		ExpectPrepare(query).
+		ExpectExec().
+		WithArgs(user.Id, whitelist.Category, whitelist.Name, user.Id, whitelist.Category, whitelist.Name).
+		WillReturnResult(sqlmock.NewResult(0, 0))
 
-// 	list := []models.WhiteListItem {
-// 		{ whitelist.Category, whitelist.Name, },
-// 		{ whitelist.Category, whitelist.Name, },
-// 	}
+	list := []models.WhiteListItem {
+		{ whitelist.Category, whitelist.Name, },
+		{ whitelist.Category, whitelist.Name, },
+	}
 
-// 	if err := models.AddWhiteList(app, user.Id, list); err != nil {
-// 		t.Error("Error inserting information to database:", err)
-// 		return
-// 	}
+	if err := models.AddWhiteList(app, user.Id, list); err != nil {
+		t.Error("Error inserting information to database:", err)
+		return
+	}
 
-// 	if err := mock.ExpectationsWereMet(); err != nil {
-// 		t.Error("There were unfulfilled expectations:", err)
-// 		return
-// 	}
-// }
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Error("There were unfulfilled expectations:", err)
+		return
+	}
+}
 
-// func TestAddCategory(t *testing.T) {
-// 	app, mock := test.GetMockApp() 
-// 	defer app.DB.Client.Close()
+func TestAddCategory(t *testing.T) {
+	app, mock := test.GetMockApp() 
+	defer app.DB.Client.Close()
 	
-// 	query := `INSERT INTO categories\(id, name, budget\) VALUES \(\?,\?,\?\), \(\?,\?,\?\)`
-// 	mock.
-// 		ExpectPrepare(query).
-// 		ExpectExec().
-// 		WithArgs(user.Id, whitelist.Category, 100, user.Id, "shopping", 200).
-// 		WillReturnResult(sqlmock.NewResult(0, 0))
+	query := `INSERT INTO categories\(id, name, budget\) VALUES \(\?,\?,\?\), \(\?,\?,\?\)`
+	mock.
+		ExpectPrepare(query).
+		ExpectExec().
+		WithArgs(user.Id, whitelist.Category, float64(100), user.Id, "shopping", float64(200)).
+		WillReturnResult(sqlmock.NewResult(0, 0))
 	
-// 	list := []models.Category {
-// 		{ whitelist.Category, 100, },
-// 		{ "shopping", 200, },
-// 	}
+	budget := models.Budget {
+		Categories: []models.Category {
+			{ whitelist.Category, float64(100), },
+			{ "shopping", float64(200), },
+		},
+	}
 
-// 	if err := models.AddCategories(app, user.Id, list, nil); err != nil {
-// 		t.Error("Error inserting data into data:", err)
-// 		return
-// 	}
+	if err := budget.Create(app, user.Id); err != nil {
+		t.Error("Error inserting data into data:", err)
+		return
+	}
 
-// 	if err := mock.ExpectationsWereMet(); err != nil {
-// 		t.Error("There were unfulfilled expectations:", err)
-// 		return
-// 	}
-// }
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Error("There were unfulfilled expectations:", err)
+		return
+	}
+}

@@ -35,7 +35,6 @@ func TestLinkTokenInvalidClient(t *testing.T) {
 	res := test.GetWithCookie(
 		"/v0/getLinkToken",
 		m.Authenticate(p.GetPlaidToken(app), app),
-		nil,
 		app,
 		"AuthToken",
 	)
@@ -59,7 +58,7 @@ func TestExchangePublicTokenInvalidClient(t *testing.T) {
 
 	body, _ := json.Marshal(publicToken)
 
-	res := test.GetWithCookie(
+	res := test.PostWithCookie(
 		"/v0/exchangePublicToken",
 		m.Authenticate(p.ExchangePublicToken(app), app),
 		bytes.NewBuffer(body),
@@ -81,7 +80,7 @@ func TestGetTransactionsInvalidClient(t *testing.T) {
 
 	body, _ := json.Marshal(publicToken)
 
-	res := test.GetWithCookie(
+	res := test.PostWithCookie(
 		"/v0/exchangePublicToken",
 		m.Authenticate(p.GetTransactions(app), app),
 		bytes.NewBuffer(body),
@@ -104,7 +103,6 @@ func TestGetBalancesInvalidClient(t *testing.T) {
 	res := test.GetWithCookie(
 		"/v0/getBalances",
 		m.Authenticate(p.GetBalance(app), app),
-		nil,
 		app,
 		"AuthToken",
 	)
@@ -126,7 +124,6 @@ func TestGetLinkToken(t *testing.T) {
 	if res := test.GetWithCookie(
 		"/v0/getLinkToken",
 		m.Authenticate(p.GetPlaidToken(app), app),
-		nil,
 		app,
 		"AuthToken",
 	); res.Code != http.StatusOK {
@@ -154,7 +151,6 @@ func TestGetTransactions(t *testing.T) {
 	res := test.GetWithCookie(
 		"/v0/getTransactions",
 		m.Authenticate(p.GetTransactions(app), app),
-		nil,
 		app,
 		"AuthToken",
 	)
@@ -182,7 +178,6 @@ func TestGetBalances(t *testing.T) {
 	res := test.GetWithCookie(
 		"/v0/getBalance",
 		m.Authenticate(p.GetBalance(app), app),
-		nil,
 		app,
 		"AuthToken",
 	)
@@ -209,7 +204,7 @@ func TestExchangePublicTokenInvalidToken(t *testing.T) {
 
 	body, _ := json.Marshal(publicToken)
 
-	res := test.GetWithCookie(
+	res := test.PostWithCookie(
 		"/v0/exchangePublicToken",
 		p.ExchangePublicToken(app),
 		bytes.NewBuffer(body),
@@ -232,7 +227,6 @@ func TestGetBalancesInvalidToken(t *testing.T) {
 	res := test.GetWithCookie(
 		"/v0/getBalances",
 		p.GetBalance(app),
-		nil,
 		app,
 		"AuthToken",
 	)

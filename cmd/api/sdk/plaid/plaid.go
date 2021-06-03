@@ -139,10 +139,9 @@ func GetBalance(app *application.App) httprouter.Handle {
 			models.CreateError(w, http.StatusBadGateway, msg, err)
 		}
 
-		// balance object definition
+		// define a balance object and loop through tokens to start 
+		// creating it
 		var balance models.Balance
-
-		// loop through all tokens
 		for i := range tokens {
 			// get balance response
 			res, err := app.Plaid.Client.GetBalances(tokens[i].Value)
