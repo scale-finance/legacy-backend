@@ -195,7 +195,7 @@ func TestAddWhiteList(t *testing.T) {
 	}
 }
 
-func TestAddCategory(t *testing.T) {
+func TestCreateBudget(t *testing.T) {
 	app, mock := test.GetMockApp() 
 	defer app.DB.Client.Close()
 	
@@ -215,6 +215,58 @@ func TestAddCategory(t *testing.T) {
 
 	if err := budget.Create(app, user.Id); err != nil {
 		t.Error("Error inserting data into data:", err)
+		return
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Error("There were unfulfilled expectations:", err)
+		return
+	}
+}
+
+func TestUpdateBudgetAdd(t *testing.T) {
+	app, mock := test.GetMockApp()
+	defer app.DB.Client.Close()
+
+	budget := models.Budget {
+		Request: models.UpdateRequest {
+			Add: models.UpdateObject {
+				Categories: []models.UpdateCategory { 
+					{ New: models.Category { Name: "Shopping", Budget: 300 }, },
+					{ New: models.Category { Name: "Fast Food", Budget: 100 }, },
+				},
+				WhiteList: []models.UpdateWhiteList {
+					{ New: models.WhiteListItem { Name: "Polo Store", Category: "Shopping"}, },
+					{ New: models.WhiteListItem { Name: "Five Guys", Category: "Fast Food" }, },
+					{ New: models.WhiteListItem { Name: "Chipotle", Category: "Fast Food" }, },
+				},
+			},
+		},
+	}
+	
+	query2 := `INSERT INTO categories\(id, name, budget\) VALUES \(\?,\?,\?\), \(\?,\?,\?\)`
+	mock.
+		ExpectPrepare(query2).
+		ExpectExec().
+		WithArgs(
+			user.Id, budget.Request.Add.Categories[0].New.Name, budget.Request.Add.Categories[0].New.Budget,
+			user.Id, budget.Request.Add.Categories[1].New.Name, budget.Request.Add.Categories[1].New.Budget,
+		).
+		WillReturnResult(sqlmock.NewResult(0, 0))
+
+	query1 := `INSERT INTO whitelist\(id, category, name\) VALUES \(\?,\?,\?\), \(\?,\?,\?\), \(\?,\?,\?\)`
+	mock.
+		ExpectPrepare(query1).
+		ExpectExec().
+		WithArgs(
+			user.Id, budget.Request.Add.WhiteList[0].New.Category, budget.Request.Add.WhiteList[0].New.Name,
+			user.Id, budget.Request.Add.WhiteList[1].New.Category, budget.Request.Add.WhiteList[1].New.Name,
+			user.Id, budget.Request.Add.WhiteList[2].New.Category, budget.Request.Add.WhiteList[2].New.Name,
+		).
+		WillReturnResult(sqlmock.NewResult(0, 0))
+
+	if err := budget.Update(app, user.Id); err != nil {
+		t.Error("There was an error updating the budget:", err)
 		return
 	}
 
