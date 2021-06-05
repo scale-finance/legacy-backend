@@ -168,23 +168,35 @@ func TestGetTokens(t *testing.T) {
 
 // * budget tests
 
-func TestAddWhiteList(t *testing.T) {
+func TestUpdateWhiteList(t *testing.T) {
 	app, mock := test.GetMockApp()
 	defer app.DB.Client.Close()
 
-	query := `INSERT INTO whitelist\(id, category, name\) VALUES \(\?,\?,\?\), \(\?,\?,\?\)`
+	query := 
+		`INSERT INTO whitelist\(id, category, name, itemId\) VALUES \(\?,\?,\?,\?\), \(\?,\?,\?,\?\) AS updated ON ` +
+		`DUPLICATE KEY UPDATE id\=updated\.id, category\=updated\.category, name\=updated\.name, itemId\=updated\.itemId;`
+	
+	budget := models.Budget {
+		Request: models.UpdateRequest {
+			Update: models.UpdateObject {
+				WhiteList: []models.WhiteListItem {
+					{ whitelist.Category, whitelist.Name, "hellobro" },
+					{ whitelist.Category, whitelist.Name, "goodbyeo" },
+				},
+			},
+		},
+	}
+
 	mock.
 		ExpectPrepare(query).
 		ExpectExec().
-		WithArgs(user.Id, whitelist.Category, whitelist.Name, user.Id, whitelist.Category, whitelist.Name).
+		WithArgs(
+			user.Id, budget.Request.Update.WhiteList[0].Category, budget.Request.Update.WhiteList[0].Name, budget.Request.Update.WhiteList[0].Id, 
+			user.Id, budget.Request.Update.WhiteList[1].Category, budget.Request.Update.WhiteList[1].Name, budget.Request.Update.WhiteList[1].Id, 
+		).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
-	list := []models.WhiteListItem {
-		{ whitelist.Category, whitelist.Name, },
-		{ whitelist.Category, whitelist.Name, },
-	}
-
-	if err := models.AddWhiteList(app, user.Id, list); err != nil {
+	if err := budget.Update(app, user.Id); err != nil {
 		t.Error("Error inserting information to database:", err)
 		return
 	}
@@ -195,25 +207,35 @@ func TestAddWhiteList(t *testing.T) {
 	}
 }
 
-func TestCreateBudget(t *testing.T) {
+func TestUpdateCategory(t *testing.T) {
 	app, mock := test.GetMockApp() 
 	defer app.DB.Client.Close()
 	
-	query := `INSERT INTO categories\(id, name, budget\) VALUES \(\?,\?,\?\), \(\?,\?,\?\)`
+	query := 
+		`INSERT INTO categories\(id, name, budget, categoryId\) VALUES \(\?,\?,\?,\?\), \(\?,\?,\?,\?\) AS updated ON ` +
+		`DUPLICATE KEY UPDATE id\=updated\.id, name\=updated\.name, budget\=updated\.budget, categoryId\=updated\.categoryId;`
+	
+	budget := models.Budget {
+		Request: models.UpdateRequest {
+			Update: models.UpdateObject {
+				Categories: []models.Category {
+					{ whitelist.Category, 100, "catie" },
+					{ "shopping", 200, "cattegorcatie" },
+				},
+			},
+		},
+	}
+	
 	mock.
 		ExpectPrepare(query).
 		ExpectExec().
-		WithArgs(user.Id, whitelist.Category, float64(100), user.Id, "shopping", float64(200)).
+		WithArgs(
+			user.Id, budget.Request.Update.Categories[0].Name, budget.Request.Update.Categories[0].Budget, budget.Request.Update.Categories[0].Id,
+			user.Id, budget.Request.Update.Categories[1].Name, budget.Request.Update.Categories[1].Budget, budget.Request.Update.Categories[1].Id,	
+		).
 		WillReturnResult(sqlmock.NewResult(0, 0))
-	
-	budget := models.Budget {
-		Categories: []models.Category {
-			{ whitelist.Category, float64(100), },
-			{ "shopping", float64(200), },
-		},
-	}
 
-	if err := budget.Create(app, user.Id); err != nil {
+	if err := budget.Update(app, user.Id); err != nil {
 		t.Error("Error inserting data into data:", err)
 		return
 	}
@@ -224,44 +246,48 @@ func TestCreateBudget(t *testing.T) {
 	}
 }
 
-func TestUpdateBudgetAdd(t *testing.T) {
+func TestUpdateBudget(t *testing.T) {
 	app, mock := test.GetMockApp()
 	defer app.DB.Client.Close()
 
 	budget := models.Budget {
 		Request: models.UpdateRequest {
-			Add: models.UpdateObject {
-				Categories: []models.UpdateCategory { 
-					{ New: models.Category { Name: "Shopping", Budget: 300 }, },
-					{ New: models.Category { Name: "Fast Food", Budget: 100 }, },
+			Update: models.UpdateObject {
+				Categories: []models.Category { 
+					{ Name: "Shopping", Budget: 300, Id: "a;sldfkdj" },
+					{ Name: "Fast Food", Budget: 100, Id: "asldfkjs" },
 				},
-				WhiteList: []models.UpdateWhiteList {
-					{ New: models.WhiteListItem { Name: "Polo Store", Category: "Shopping"}, },
-					{ New: models.WhiteListItem { Name: "Five Guys", Category: "Fast Food" }, },
-					{ New: models.WhiteListItem { Name: "Chipotle", Category: "Fast Food" }, },
+				WhiteList: []models.WhiteListItem {
+					{ Name: "Polo Store", Category: "Shopping", Id: ";lkj3lk" },
+					{ Name: "Five Guys", Category: "Fast Food", Id: ";lkj;fl" },
+					{ Name: "Chipotle", Category: "Fast Food", Id: "a;sdlf6k" },
 				},
 			},
 		},
 	}
 	
-	query2 := `INSERT INTO categories\(id, name, budget\) VALUES \(\?,\?,\?\), \(\?,\?,\?\)`
+	query2 := 
+		`INSERT INTO categories\(id, name, budget, categoryId\) VALUES \(\?,\?,\?,\?\), \(\?,\?,\?,\?\) AS updated ON ` +
+		`DUPLICATE KEY UPDATE id\=updated\.id, name\=updated\.name, budget\=updated\.budget, categoryId\=updated\.categoryId;`
 	mock.
 		ExpectPrepare(query2).
 		ExpectExec().
 		WithArgs(
-			user.Id, budget.Request.Add.Categories[0].New.Name, budget.Request.Add.Categories[0].New.Budget,
-			user.Id, budget.Request.Add.Categories[1].New.Name, budget.Request.Add.Categories[1].New.Budget,
+			user.Id, budget.Request.Update.Categories[0].Name, budget.Request.Update.Categories[0].Budget, budget.Request.Update.Categories[0].Id,
+			user.Id, budget.Request.Update.Categories[1].Name, budget.Request.Update.Categories[1].Budget, budget.Request.Update.Categories[1].Id,
 		).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
-	query1 := `INSERT INTO whitelist\(id, category, name\) VALUES \(\?,\?,\?\), \(\?,\?,\?\), \(\?,\?,\?\)`
+	query1 := 
+		`INSERT INTO whitelist\(id, category, name, itemId\) VALUES \(\?,\?,\?,\?\), \(\?,\?,\?,\?\), \(\?,\?,\?,\?\) AS updated ON ` +
+		`DUPLICATE KEY UPDATE id\=updated\.id, category\=updated\.category, name\=updated\.name, itemId\=updated\.itemId;`
 	mock.
 		ExpectPrepare(query1).
 		ExpectExec().
 		WithArgs(
-			user.Id, budget.Request.Add.WhiteList[0].New.Category, budget.Request.Add.WhiteList[0].New.Name,
-			user.Id, budget.Request.Add.WhiteList[1].New.Category, budget.Request.Add.WhiteList[1].New.Name,
-			user.Id, budget.Request.Add.WhiteList[2].New.Category, budget.Request.Add.WhiteList[2].New.Name,
+			user.Id, budget.Request.Update.WhiteList[0].Category, budget.Request.Update.WhiteList[0].Name, budget.Request.Update.WhiteList[0].Id,
+			user.Id, budget.Request.Update.WhiteList[1].Category, budget.Request.Update.WhiteList[1].Name, budget.Request.Update.WhiteList[1].Id,
+			user.Id, budget.Request.Update.WhiteList[2].Category, budget.Request.Update.WhiteList[2].Name, budget.Request.Update.WhiteList[2].Id,
 		).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 

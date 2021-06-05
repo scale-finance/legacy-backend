@@ -32,6 +32,24 @@ var budget = models.Budget{
 		{ Category: "groceries", Name: "Walmart" },
 		{ Category: "rent", Name: "The Rise" },
 	},
+
+	Request: models.UpdateRequest {
+		Update: models.UpdateObject {
+			Categories: []models.Category {
+				{ Name: "shopping", Budget: 200, Id: "qwert" },
+				{ Name: "groceries", Budget: 250, Id: "asdfag" },
+				{ Name: "rent", Budget: 800, Id: ";lkjk" },
+			},
+			WhiteList: []models.WhiteListItem {
+				{ Category: "shopping", Name: "Calvin Klien", Id: ";lkjl" },
+				{ Category: "shopping", Name: "Best Buy", Id: "asdfasdf" },
+				{ Category: "shopping", Name: "Amazon", Id: "qwerqwer" },
+				{ Category: "groceries", Name: "Aldi", Id: ";sdlfkgjsd" },
+				{ Category: "groceries", Name: "Walmart", Id: "zxcvzxc" },
+				{ Category: "rent", Name: "The Rise", Id: ".,mn.,n,mn" },
+			},
+		},
+	},
 }
 
 func TestCreateBudget(t *testing.T) {
@@ -41,13 +59,19 @@ func TestCreateBudget(t *testing.T) {
 	jsonObject, _ := json.Marshal(budget)
 
 	// test categories query
-	query1 := `INSERT INTO categories\(id, name, budget\) VALUES \(\?,\?,\?\), \(\?,\?,\?\), \(\?,\?,\?\)`
+	query1 := 
+		`INSERT INTO categories\(id, name, budget, categoryId\) ` +
+		`VALUES \(\?,\?,\?,\?\), \(\?,\?,\?,\?\), \(\?,\?,\?,\?\) AS updated ON DUPLICATE KEY UPDATE ` +
+		`id\=updated\.id, name\=updated\.name, budget\=updated\.budget, categoryId\=updated\.categoryId;`
 	mock.ExpectPrepare(query1).
 	ExpectExec().
 	WillReturnResult(sqlmock.NewResult(0, 0))
 	
 	// test whitelist query
-	query2 := `INSERT INTO whitelist\(id, category, name\) VALUES \(\?,\?,\?\), \(\?,\?,\?\), \(\?,\?,\?\), \(\?,\?,\?\), \(\?,\?,\?\), \(\?,\?,\?\)`
+	query2 := 
+		`INSERT INTO whitelist\(id, category, name, itemId\) ` +
+		`VALUES \(\?,\?,\?,\?\), \(\?,\?,\?,\?\), \(\?,\?,\?,\?\), \(\?,\?,\?,\?\), \(\?,\?,\?,\?\), \(\?,\?,\?,\?\) AS updated ON DUPLICATE KEY UPDATE ` +
+		`id\=updated\.id, category\=updated\.category, name\=updated\.name, itemId\=updated\.itemId;`
 	mock.ExpectPrepare(query2).
 		ExpectExec().
 		WillReturnResult(sqlmock.NewResult(0, 0))
@@ -59,6 +83,11 @@ func TestCreateBudget(t *testing.T) {
 		app,
 		"AuthToken",
 	)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Error("There were unfulfilled expectations:", err)
+		return
+	}
 
 	if res.Code != http.StatusOK {
 		// body response

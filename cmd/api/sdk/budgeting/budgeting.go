@@ -24,7 +24,7 @@ func Create(app *application.App) httprouter.Handle {
 		userId := fmt.Sprintf("%v", r.Context().Value(models.Key("user")))
 
 		// add categories to database 
-		if err := budget.Create(app, userId); err != nil {
+		if err := budget.Update(app, userId); err != nil {
 			msg := "Failed to store budget information in database"
 			models.CreateError(w, http.StatusBadGateway, msg, err)
 			return
