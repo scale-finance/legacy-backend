@@ -6,7 +6,7 @@ import (
 
 // item for white listed companies of a specific category
 type WhiteListItem struct {
-	Category string `json:"category"` // name of category
+	Category string `json:"category"` // id of category
 	Name     string `json:"name"`     // name of company being listed under this category
 	Id		 string `json:"id"`       // item id
 }
@@ -49,6 +49,11 @@ func (b *Budget) Update(app *application.App, userId string) error {
 
 	// add any whitelist elements that need to be added
 	if err := UpdateWhiteList(app, userId, b.Request.Update.WhiteList); err != nil {
+		return err
+	}
+
+	// delete any elements that need to be deleted
+	if err := Delete(app, userId, *b); err != nil {
 		return err
 	}
 
@@ -120,6 +125,74 @@ func UpdateCategories(app *application.App, userId string, categories []Category
 	// execute query
 	if _, err := stmt.Exec(vals...); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// Deletes rows according to the request. If a category is deleted, and whitelist items
+// in that category are also marked for deletion, they will be ignored and all of the 
+// rows will be deleted in a single query. This function will at most perform 2 queries.
+// If there is an error with the execution, it will be reflectedi in the return value.
+func Delete(app *application.App, userId string, b Budget) error {
+	deleted := make(map[string]bool) // create a map to keep track of deleted categories
+
+	if len(b.Request.Remove.Categories) != 0 {
+		vals := []interface{} { userId } // initialize vals with userid
+		query := 
+			"DELETE categories, whitelist " +
+			"FROM categories LEFT JOIN whitelist " +
+			"ON categories.categoryId = whitelist.category " +
+			"WHERE categories.id = ? AND categories.categoryId IN ("
+
+		// loop through all categories
+		for _, category := range b.Request.Remove.Categories {
+			query += "?,"
+			vals = append(vals, category.Id)
+			deleted[category.Id] = true // adding category to deleted map
+		}
+
+		// prepare query
+		query = query[0:len(query)-1] + ");"
+		stmt, err := app.DB.Client.Prepare(query)
+		if err != nil {
+			return err
+		}
+
+		// execute query
+		if _, err := stmt.Exec(vals...); err != nil {
+			return err
+		}
+	}
+
+	if len(b.Request.Remove.WhiteList) != 0 {
+		vals := []interface{} { userId }
+		query := 
+			"DELETE FROM whitelist " +
+			"WHERE whitelist.id = ? AND whitelist.itemId IN ("
+		
+		// loop through all items
+		for _, item := range b.Request.Remove.WhiteList {
+			// if the item is deleted we don't add it to the query
+			if !deleted[item.Category] {
+				query += "?,"
+				vals = append(vals, item.Id)
+			}
+		}
+
+		if len(vals) > 1 {
+			// prepare query
+			query = query[0:len(query)-1] + ");"
+			stmt, err := app.DB.Client.Prepare(query)
+			if err != nil {
+				return err
+			}
+	
+			// execute query
+			if _, err := stmt.Exec(vals...); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil

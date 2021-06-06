@@ -78,7 +78,7 @@ func TestCreateBudget(t *testing.T) {
 	
 	res := test.PostWithCookie(
 		"/v0/createBudget",
-		middleware.Authenticate(budgeting.Create(app), app),
+		middleware.Authenticate(budgeting.Update(app), app),
 		bytes.NewBuffer(jsonObject),
 		app,
 		"AuthToken",

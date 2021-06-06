@@ -10,10 +10,12 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+// TODO re-document this section
+
 // This function initially creates a budget for the user and adds their categories 
 // and respective whitelists to the database. If there is a failure in the insertion
 // or execution of database queries will result in a JSON error.
-func Create(app *application.App) httprouter.Handle {
+func Update(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		// extract the budget information from the request body
 		var budget models.Budget
