@@ -62,13 +62,14 @@ func TestUserDoesNotExist(t *testing.T) {
 	mock.ExpectQuery(query)
 
 	exists := user.Exists(app)
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("There were unfulfilled expectations: %s", err)
-		return
-	}
 
 	if exists {
 		t.Error("User sould not exist")
+		return
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
 		return
 	}
 }

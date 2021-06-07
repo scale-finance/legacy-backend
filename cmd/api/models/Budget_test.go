@@ -81,7 +81,7 @@ func TestUpdateCategory(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
 	if err := budget.Update(app, user.Id); err != nil {
-		t.Error("Error inserting data into data:", err)
+		t.Error("Error inserting data into database:", err)
 		return
 	}
 

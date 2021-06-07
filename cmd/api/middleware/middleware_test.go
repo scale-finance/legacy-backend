@@ -15,7 +15,7 @@ func TestInvalidAuthentication(t *testing.T) {
 	app, _ := test.GetMockApp()
 	defer app.DB.Client.Close()
 
-	if res := test.Get("/v0", middleware.Authenticate(auth.AuthCheck(), app), nil); res.Code != http.StatusUnauthorized {
+	if res := test.Get("/v0", middleware.Authenticate(auth.AuthCheck(), app)); res.Code != http.StatusUnauthorized {
 		t.Errorf("Wrong http status. Expected %v, got: %v", http.StatusUnauthorized, res.Code)
 	} else {
 		// Decode response body

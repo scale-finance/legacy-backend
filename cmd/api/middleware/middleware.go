@@ -12,8 +12,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// TODO use alice or find a way to chain desired handlers to be affected by middleware
-
 // Middleware function that takes in a handler and an application and returns another
 // handler that tests the validity of authentication tokens found in auth cookie. If
 // the token is expired or invalid for any reason the user will not be authenticated

@@ -10,11 +10,10 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// TODO re-document this section
-
-// This function initially creates a budget for the user and adds their categories 
-// and respective whitelists to the database. If there is a failure in the insertion
-// or execution of database queries will result in a JSON error.
+// This handler will be in charge of all forms of edits whether it be additions, deletions,
+// or changes by using a request body in the format of an UpdateRequest. This function will
+// be used to create and change the user's budget in the application. If there is an error,
+// with a query or database connection it will be logged and returned as a JSON error.
 func Update(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		// extract the budget information from the request body
@@ -25,7 +24,7 @@ func Update(app *application.App) httprouter.Handle {
 		// use in the creation of the row containing the permanent token
 		userId := fmt.Sprintf("%v", r.Context().Value(models.Key("user")))
 
-		// add categories to database 
+		// updates any items in the budget.Request 
 		if err := budget.Update(app, userId); err != nil {
 			msg := "Failed to store budget information in database"
 			models.CreateError(w, http.StatusBadGateway, msg, err)

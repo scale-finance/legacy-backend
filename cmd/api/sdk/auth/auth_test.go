@@ -144,7 +144,7 @@ func TestUserSignoutFailure(t *testing.T) {
 	app, _ := test.GetMockApp()
 	defer app.DB.Client.Close()
 
-	res := test.Get("/v0/logout", auth.Logout(app), nil)
+	res := test.Get("/v0/logout", auth.Logout(app))
 	if res.Code != http.StatusBadRequest {
 		t.Error("This function should not have successfully executed")
 	}

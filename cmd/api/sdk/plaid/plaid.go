@@ -88,7 +88,6 @@ func ExchangePublicToken(app *application.App) httprouter.Handle {
 // This function will get transactions from the past 2 months from all bank accounts
 // affiliated with the user. If there is an error with the database retrieval or the
 // plaid client call, this will be reflected in the json response accordingly.
-// TODO make function get transactions that will be seen with budget restrictions
 func GetTransactions(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		// create the user with the id obtained from middleware context
