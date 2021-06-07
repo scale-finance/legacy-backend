@@ -5,12 +5,13 @@ import (
 	"github.com/elopez00/scale-backend/cmd/api/sdk/auth"
 	b "github.com/elopez00/scale-backend/cmd/api/sdk/budget"
 	p "github.com/elopez00/scale-backend/cmd/api/sdk/plaid"
-	"github.com/elopez00/scale-backend/pkg/app"
+	"github.com/elopez00/scale-backend/pkg/application"
+	
 	"github.com/julienschmidt/httprouter"
 )
 
 // Gets api routes used in server
-func Get(app *app.App) *httprouter.Router {
+func Get(app *application.App) *httprouter.Router {
 	mux := httprouter.New()
 	mux.POST("/v0/onboard", auth.Onboard(app))
 	mux.POST("/v0/login", auth.Login(app))

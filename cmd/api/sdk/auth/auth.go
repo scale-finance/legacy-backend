@@ -2,22 +2,25 @@ package auth
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
-	"log"
-	
-	application "github.com/elopez00/scale-backend/pkg/app"
-	jwt "github.com/dgrijalva/jwt-go"
+
 	"github.com/elopez00/scale-backend/cmd/api/models"
-	"github.com/julienschmidt/httprouter"
+	"github.com/elopez00/scale-backend/pkg/application"
+	
 	"github.com/google/uuid"
+	"github.com/julienschmidt/httprouter"
+	jwt "github.com/dgrijalva/jwt-go"
 )
 
 // onboard user to DB given application sequence. This function is in charge of creating
 // a new user in the database (given one does not already exist with the same credentials)
 // and will give each user a unique ID and a hashed password for further authentication
 func Onboard(app *application.App) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {		
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		defer r.Body.Close()
+		
 		// get user input from body
 		var user models.User
 		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -43,7 +46,7 @@ func Onboard(app *application.App) httprouter.Handle {
 			msg := "Unable to create user"
 			models.CreateError(w, http.StatusBadGateway, msg, err)
 			return
-		} 
+		}
 
 		// create a cookie to completely authenticate user
 		err = CreateCookie(w, app, "AuthToken", user.Id)
@@ -63,7 +66,9 @@ func Onboard(app *application.App) httprouter.Handle {
 // verification, the function will compare hashed and input password so it can then focus
 // on creating a jwt token
 func Login(app *application.App) httprouter.Handle {
-	return func (w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		defer r.Body.Close()
+
 		// grabs input user from body
 		var authUser models.User
 		if err := json.NewDecoder(r.Body).Decode(&authUser); err != nil {
@@ -94,7 +99,7 @@ func Login(app *application.App) httprouter.Handle {
 			msg := "Failed to login"
 			models.CreateError(w, http.StatusUnprocessableEntity, msg, err)
 			return
-		} 
+		}
 
 		// send successful authentication message to client
 		msg := "User successfully authenticated"
@@ -105,39 +110,40 @@ func Login(app *application.App) httprouter.Handle {
 // This function logs the user out of their session by deleting the AuthToken cookie containing
 // the user user's JWT. The function should return an error status if there is no token to delete
 func Logout(app *application.App) httprouter.Handle {
-	return func (w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		if len(r.Cookies()) < 1 {
 			msg := "User already signed out"
 			models.CreateError(w, http.StatusBadRequest, msg, nil)
-		} else {
-			DeleteCookie(w, app, "AuthToken")
-			msg := "User successfully signed out"
-			models.CreateResponse(w, msg, nil)
-		}
+		} 
+		
+		DeleteCookie(w, app, "AuthToken")
+		msg := "User successfully signed out"
+		models.CreateResponse(w, msg, nil)
 	}
 }
 
 // Creates valid httponly cookie
-func CreateCookie(w http.ResponseWriter, app* application.App, name, id string) error {
-	if token, err := GenerateJWT(app, id); err != nil {
+func CreateCookie(w http.ResponseWriter, app *application.App, name, id string) error {
+	token, err := GenerateJWT(app, id)
+	if err != nil {
 		return err
-	} else {
-		cookie := http.Cookie {
-			Name: name,
-			Value: token,
-			Expires: time.Now().Add(24 * time.Hour),
-			HttpOnly: true,
-		}
-
-		http.SetCookie(w, &cookie)
-		return nil
+	} 
+	
+	cookie := http.Cookie{
+		Name:     name,
+		Value:    token,
+		Expires:  time.Now().Add(24 * time.Hour),
+		HttpOnly: true,
 	}
+	
+	http.SetCookie(w, &cookie)
+	return nil
 }
 
 // Deletes existing cookie
-func DeleteCookie(w http.ResponseWriter, app* application.App, name string) {
-	cookie := http.Cookie {
-		Name: name,
+func DeleteCookie(w http.ResponseWriter, app *application.App, name string) {
+	cookie := http.Cookie{
+		Name:   name,
 		MaxAge: -1,
 	}
 
@@ -157,14 +163,15 @@ func AuthCheck() httprouter.Handle {
 func GenerateJWT(app *application.App, id string) (string, error) {
 	key := app.Config.GetKey()
 
-	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims {
-		Issuer: 	id,
-		ExpiresAt: 	time.Now().Add(24 * time.Hour).Unix(),
+	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
+		Issuer:    id,
+		ExpiresAt: time.Now().Add(24 * time.Hour).Unix(),
 	})
 
-	if token, err := claims.SignedString([]byte(key)); err != nil {
+	token, err := claims.SignedString([]byte(key))
+	if err != nil {
 		return "", err
-	} else {
-		return token, nil
-	}
+	} 
+	
+	return token, nil
 }

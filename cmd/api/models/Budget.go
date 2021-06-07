@@ -3,7 +3,7 @@ package models
 import (
 	"fmt"
 
-	application "github.com/elopez00/scale-backend/pkg/app"
+	"github.com/elopez00/scale-backend/pkg/application"
 )
 
 // item for white listed companies of a specific category

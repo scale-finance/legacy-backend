@@ -3,9 +3,10 @@ package models_test
 import (
 	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/elopez00/scale-backend/cmd/api/models"
 	"github.com/elopez00/scale-backend/pkg/test"
+	
+	"github.com/DATA-DOG/go-sqlmock"
 )
 
 var user = models.User{

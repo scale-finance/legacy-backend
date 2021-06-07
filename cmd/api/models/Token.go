@@ -3,17 +3,17 @@ package models
 import (
 	"fmt"
 
-	application "github.com/elopez00/scale-backend/pkg/app"
+	"github.com/elopez00/scale-backend/pkg/application"
 )
 
 // for use of plaid public token retrieval
 type Token struct {
-	Value		string	`json:"value"`
-	Id			string	`json:"id"`
+	Value string `json:"value"`
+	Id    string `json:"id"`
 }
 
 // Method adds the permanent plaid token and stores into the plaidtokens table with the
-// same id as the user. This function accepts two strings. The first one being the 
+// same id as the user. This function accepts two strings. The first one being the
 // string describing the permanent token, and the second being a string that describes
 // the item ID. Any problem given by this request will be reflected by the returned error.
 func (t *Token) Add(app *application.App, userId string) error {
@@ -36,7 +36,7 @@ func (t *Token) Add(app *application.App, userId string) error {
 // will be returned as nil.
 func GetTokens(app *application.App, userId string) ([]*Token, error) {
 	query := fmt.Sprintf("SELECT id, token, itemID FROM plaidtokens WHERE id=%q", userId)
-	
+
 	// get rows from query
 	rows, err := app.DB.Client.Query(query)
 	if err != nil {
@@ -46,7 +46,7 @@ func GetTokens(app *application.App, userId string) ([]*Token, error) {
 	// create slice of token pointers
 	tokens := make([]*Token, 0)
 	var placeholder string // ! this variable is only here because I don't know how to test without it
-	
+
 	// loop over all the rows and create a token for each
 	for rows.Next() {
 		token := new(Token)

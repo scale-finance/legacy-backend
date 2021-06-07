@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/elopez00/scale-backend/cmd/api/models"
-	application "github.com/elopez00/scale-backend/pkg/app"
+	"github.com/elopez00/scale-backend/pkg/application"
 	"github.com/julienschmidt/httprouter"
 	"github.com/plaid/plaid-go/plaid"
 )
@@ -138,7 +138,7 @@ func GetBalance(app *application.App) httprouter.Handle {
 			models.CreateError(w, http.StatusBadGateway, msg, err)
 		}
 
-		// define a balance object and loop through tokens to start 
+		// define a balance object and loop through tokens to start
 		// creating it
 		var balance models.Balance
 		for i := range tokens {

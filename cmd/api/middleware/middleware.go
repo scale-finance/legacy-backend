@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"net/http"
 
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/elopez00/scale-backend/cmd/api/models"
-	application "github.com/elopez00/scale-backend/pkg/app"
+	"github.com/elopez00/scale-backend/pkg/application"
+
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -48,8 +49,8 @@ func CookieIsValid(r *http.Request, app *application.App, name string) (string, 
 
 	if err != nil {
 		return "", err
-	} 
-	
+	}
+
 	if !token.Valid {
 		err = errors.New("token invalid")
 		return "", err

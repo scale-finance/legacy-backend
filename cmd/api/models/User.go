@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"log"
 
-	application "github.com/elopez00/scale-backend/pkg/app"
+	"github.com/elopez00/scale-backend/pkg/application"
 )
 
 // The User struct will be used to get any information regarding the user information.
 // The id in this case scenario is a primary key and will be used to retrieve other tables
 // linked to the User.
 type User struct {
-	Id			string	`json:"id,omitempty"`
-	FirstName	string	`json:"firstname,omitempty"`
-	LastName	string	`json:"lastname,omitempty"`
-	Email		string	`json:"email,omitempty"`
-	Password	string	`json:"password,omitempty"`
+	Id        string `json:"id,omitempty"`
+	FirstName string `json:"firstname,omitempty"`
+	LastName  string `json:"lastname,omitempty"`
+	Email     string `json:"email,omitempty"`
+	Password  string `json:"password,omitempty"`
 }
 
 // Method that creates user row based on current user. If there are any errors with the
@@ -26,8 +26,8 @@ func (u *User) Create(app *application.App) error {
 	if err != nil {
 		log.Println("Prepare failure")
 		return err
-	} 
-	
+	}
+
 	if _, err := stmt.Exec(u.Id, u.FirstName, u.LastName, u.Email, u.Password); err != nil {
 		log.Println("Execution failure", err)
 	}

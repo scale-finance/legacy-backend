@@ -1,17 +1,17 @@
 package test
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"encoding/json"
 	"testing"
 	"time"
 
-	application "github.com/elopez00/scale-backend/pkg/app"
-	"github.com/elopez00/scale-backend/cmd/api/sdk/auth"
 	"github.com/elopez00/scale-backend/cmd/api/models"
-	
+	"github.com/elopez00/scale-backend/cmd/api/sdk/auth"
+	"github.com/elopez00/scale-backend/pkg/application"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/joho/godotenv"
 	"github.com/julienschmidt/httprouter"
@@ -22,10 +22,10 @@ import (
 // database to test queries.
 func GetMockApp() (*application.App, sqlmock.Sqlmock) {
 	db, mock, _ := sqlmock.New()
-	
+
 	app := application.GetTest(db)
 
-	return app, mock	
+	return app, mock
 }
 
 // This will get a mock application that gets the sandbox keys for plaid. Everything else
@@ -47,7 +47,7 @@ func Post(endpoint string, handler httprouter.Handle, body io.Reader) *httptest.
 	mux := httprouter.New()
 	mux.POST(endpoint, handler)
 
-	res := executeRequest(req, mux) 
+	res := executeRequest(req, mux)
 
 	return res
 }
@@ -66,14 +66,14 @@ func Get(endpoint string, handler httprouter.Handle) *httptest.ResponseRecorder 
 
 // this function is used to test any get request that requires a specific type of cookie. The name
 // parameter in this function will be used to specify what cookie the request will search for and
-// it will always return a cookie with "testvalue" as its value. Since it is a GET request, this 
+// it will always return a cookie with "testvalue" as its value. Since it is a GET request, this
 // function does not take JSON bodies
 func GetWithCookie(endpoint string, handler httprouter.Handle, app *application.App, name string) *httptest.ResponseRecorder {
 	req, _ := http.NewRequest("GET", endpoint, nil)
 	token, _ := auth.GenerateJWT(app, "testvalue")
-	req.AddCookie(&http.Cookie {
-		Name: name,
-		Value: token,
+	req.AddCookie(&http.Cookie{
+		Name:    name,
+		Value:   token,
 		Expires: time.Now().Add(365 * 24 * time.Hour),
 	})
 
@@ -91,9 +91,9 @@ func GetWithCookie(endpoint string, handler httprouter.Handle, app *application.
 func PostWithCookie(endpoint string, handler httprouter.Handle, body io.Reader, app *application.App, name string) *httptest.ResponseRecorder {
 	req, _ := http.NewRequest("POST", endpoint, body)
 	token, _ := auth.GenerateJWT(app, "testvalue")
-	req.AddCookie(&http.Cookie {
-		Name: name,
-		Value: token,
+	req.AddCookie(&http.Cookie{
+		Name:    name,
+		Value:   token,
 		Expires: time.Now().Add(365 * 24 * time.Hour),
 	})
 
@@ -104,8 +104,8 @@ func PostWithCookie(endpoint string, handler httprouter.Handle, body io.Reader, 
 	return res
 }
 
-// Function that will take in the testing object and the mock 
-// used for database testing and return a testing error if the 
+// Function that will take in the testing object and the mock
+// used for database testing and return a testing error if the
 // expectations were not met for the given mock.
 func MockExpectations(t *testing.T, mock sqlmock.Sqlmock) {
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -116,7 +116,7 @@ func MockExpectations(t *testing.T, mock sqlmock.Sqlmock) {
 
 // Function that will take in the testing object and the mock
 // used for database testing and return a testing error if the
-// expectations were met given the mock. Used for testing 
+// expectations were met given the mock. Used for testing
 // failure
 func MockFailure(t *testing.T, mock sqlmock.Sqlmock) {
 	if err := mock.ExpectationsWereMet(); err == nil {
@@ -129,7 +129,7 @@ func MockFailure(t *testing.T, mock sqlmock.Sqlmock) {
 // If the code from the response does not match the code from the expected parameter,
 // then this function will return a testing error with the response message, and a
 // comparison of the response codes.
-func Response(t* testing.T, res *httptest.ResponseRecorder, expected int) {
+func Response(t *testing.T, res *httptest.ResponseRecorder, expected int) {
 	if res.Code != expected {
 		var response models.Response
 		json.NewDecoder(res.Body).Decode(&response)
@@ -139,23 +139,29 @@ func Response(t* testing.T, res *httptest.ResponseRecorder, expected int) {
 	}
 }
 
-// Given a method, an error, and a testing object, this function 
-// will determine if the error is not nil and then return a 
-// testing error with a description that will correspond to the 
+// Given a method, an error, and a testing object, this function
+// will determine if the error is not nil and then return a
+// testing error with a description that will correspond to the
 // described method in the parameter
-func ModelMethod(t* testing.T, err error, method string) {
+func ModelMethod(t *testing.T, err error, method string) {
 	if err != nil {
-		switch(method) {
-		case "insert": t.Fatal("There was an error inserting rows to the database:", err); return
-		case "select": t.Fatal("There was an error getting the rows from the database:", err); return
-		case "delete": t.Fatal("There was an error deleting rows from the database:", err); return
+		switch method {
+		case "insert":
+			t.Fatal("There was an error inserting rows to the database:", err)
+			return
+		case "select":
+			t.Fatal("There was an error getting the rows from the database:", err)
+			return
+		case "delete":
+			t.Fatal("There was an error deleting rows from the database:", err)
+			return
 		}
 	}
 }
 
 // Given an error and a testing object, this function will determine
 // if there is an error in the execution of the model's method and
-// will return a testing error if the function successfully 
+// will return a testing error if the function successfully
 // executes. This is for testing method failure.
 func ModelMethodFailure(t *testing.T, err error) {
 	if err == nil {
