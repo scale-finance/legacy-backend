@@ -41,8 +41,9 @@ func Update(app *application.App) httprouter.Handle {
 // This handler gets the budget from the databse in the form of a JSONified budget
 // object returned in the responses result property. If there is an error with the
 // databse connection or query it will be logged nad returned as a JSON response.
+// TODO make and test this function pls thank you!
 func Get(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		
+
 	}
 }
