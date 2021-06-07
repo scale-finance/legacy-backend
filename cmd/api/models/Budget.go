@@ -1,6 +1,8 @@
 package models
 
 import (
+	"fmt"
+
 	application "github.com/elopez00/scale-backend/pkg/app"
 )
 
@@ -8,20 +10,21 @@ import (
 type WhiteListItem struct {
 	Category string `json:"category"` // id of category
 	Name     string `json:"name"`     // name of company being listed under this category
-	Id		 string `json:"id"`       // item id
+	Id       string `json:"id"`       // item id
 }
 
 // category within budget
 type Category struct {
-	Name   string  `json:"name"`   // name of category
-	Budget float64 `json:"budget"` // amount of money budgeted towards this category
-	Id	   string  `json:"id"`	   // category id
+	Name      string          `json:"name"`                // name of category
+	Budget    float64         `json:"budget"`              // amount of money budgeted towards this category
+	Id        string          `json:"id"`                  // category id
+	WhiteList []WhiteListItem `json:"whitelist,omitempty"` // whitelist corresponding to category
 }
 
 // Object containing both category updates and whitelist updates. Neither one or the
 // other are required.
 type UpdateObject struct {
-	Categories []Category  `json:"categories,omitempty"`
+	Categories []Category      `json:"categories,omitempty"`
 	WhiteList  []WhiteListItem `json:"whitelist,omitempty"`
 }
 
@@ -33,9 +36,56 @@ type UpdateRequest struct {
 
 // A budget is a combination of categories
 type Budget struct {
-	Categories []Category      `json:"categories"`
-	WhiteList  []WhiteListItem `json:"whitelist,omitempty"`
-	Request    UpdateRequest   `json:"request,omitempty"`
+	Categories []Category    `json:"categories,omitempty"`
+	Request    UpdateRequest `json:"request,omitempty"`
+}
+
+// This function will get the budget of the user from the database given
+// the user id and will return it as a Budget model. If the execution of
+// this function fails at any given point, it will return the error.
+func GetBudget(app *application.App, userId string) (Budget, error) {
+	var budget Budget                          // output budget
+	catMap := make(map[string][]WhiteListItem) // map containing all whitelist items pertaining to a category
+
+	// get categories from database
+	queryCategories := fmt.Sprintf("SELECT id, name, budget, categoryId FROM categories WHERE categories.id = %q", userId)
+	categories, err := app.DB.Client.Query(queryCategories)
+	if err != nil {
+		return Budget{}, err
+	}
+
+	// get whitelist items from database
+	queryWhiteList := fmt.Sprintf("SELECT id, name, category, itemId FROM whitelist WHERE whitelist.id = %q", userId)
+	whitelist, err := app.DB.Client.Query(queryWhiteList)
+	if err != nil {
+		return Budget{}, err
+	}
+
+	// only have this variable to temporarily hold user id for testing purposes
+	var placeholder string
+
+	// assign whitelist items to catMap
+	for whitelist.Next() {
+		item := new(WhiteListItem)
+		if err := whitelist.Scan(&placeholder, &item.Name, &item.Category, &item.Id); err != nil {
+			return Budget{}, err
+		}
+
+		catMap[item.Category] = append(catMap[item.Category], *item)
+	}
+
+	// assign catMap items to category whitelist and add category to budget
+	for categories.Next() {
+		category := new(Category)
+		if err := categories.Scan(&placeholder, &category.Name, &category.Budget, &category.Id); err != nil {
+			return Budget{}, err
+		}
+
+		category.WhiteList = catMap[category.Id]
+		budget.Categories = append(budget.Categories, *category)
+	}
+
+	return budget, nil
 }
 
 // Single function that handles all updates to current budget whether it be adding, removing,
@@ -70,9 +120,9 @@ func UpdateWhiteList(app *application.App, userId string, whitelist []WhiteListI
 	}
 
 	query := "INSERT INTO whitelist(id, category, name, itemId) VALUES "
-	queryEnd := 
-		" AS updated ON DUPLICATE KEY UPDATE id=updated.id, category=updated.category,"+
-		" name=updated.name, itemId=updated.itemId;"
+	queryEnd :=
+		" AS updated ON DUPLICATE KEY UPDATE id=updated.id, category=updated.category," +
+			" name=updated.name, itemId=updated.itemId;"
 
 	vals := []interface{}{}
 
@@ -82,7 +132,7 @@ func UpdateWhiteList(app *application.App, userId string, whitelist []WhiteListI
 	}
 
 	// prepare statement
-	query = query[0 : len(query)-1] + queryEnd
+	query = query[0:len(query)-1] + queryEnd
 	stmt, err := app.DB.Client.Prepare(query)
 	if err != nil {
 		return err
@@ -104,9 +154,9 @@ func UpdateCategories(app *application.App, userId string, categories []Category
 	}
 
 	query := "INSERT INTO categories(id, name, budget, categoryId) VALUES "
-	queryEnd := 
-		" AS updated ON DUPLICATE KEY UPDATE id=updated.id, name=updated.name,"+
-		" budget=updated.budget, categoryId=updated.categoryId;"
+	queryEnd :=
+		" AS updated ON DUPLICATE KEY UPDATE id=updated.id, name=updated.name," +
+			" budget=updated.budget, categoryId=updated.categoryId;"
 
 	vals := []interface{}{}
 
@@ -116,7 +166,7 @@ func UpdateCategories(app *application.App, userId string, categories []Category
 	}
 
 	// prepare statement
-	query = query[0 : len(query)-1] + queryEnd// trim last comma
+	query = query[0:len(query)-1] + queryEnd // trim last comma
 	stmt, err := app.DB.Client.Prepare(query)
 	if err != nil {
 		return err
@@ -131,19 +181,19 @@ func UpdateCategories(app *application.App, userId string, categories []Category
 }
 
 // Deletes rows according to the request. If a category is deleted, and whitelist items
-// in that category are also marked for deletion, they will be ignored and all of the 
+// in that category are also marked for deletion, they will be ignored and all of the
 // rows will be deleted in a single query. This function will at most perform 2 queries.
 // If there is an error with the execution, it will be reflectedi in the return value.
 func Delete(app *application.App, userId string, b Budget) error {
 	deleted := make(map[string]bool) // create a map to keep track of deleted categories
 
 	if len(b.Request.Remove.Categories) != 0 {
-		vals := []interface{} { userId } // initialize vals with userid
-		query := 
+		vals := []interface{}{userId} // initialize vals with userid
+		query :=
 			"DELETE categories, whitelist " +
-			"FROM categories LEFT JOIN whitelist " +
-			"ON categories.categoryId = whitelist.category " +
-			"WHERE categories.id = ? AND categories.categoryId IN ("
+				"FROM categories LEFT JOIN whitelist " +
+				"ON categories.categoryId = whitelist.category " +
+				"WHERE categories.id = ? AND categories.categoryId IN ("
 
 		// loop through all categories
 		for _, category := range b.Request.Remove.Categories {
@@ -166,11 +216,11 @@ func Delete(app *application.App, userId string, b Budget) error {
 	}
 
 	if len(b.Request.Remove.WhiteList) != 0 {
-		vals := []interface{} { userId }
-		query := 
+		vals := []interface{}{userId}
+		query :=
 			"DELETE FROM whitelist " +
-			"WHERE whitelist.id = ? AND whitelist.itemId IN ("
-		
+				"WHERE whitelist.id = ? AND whitelist.itemId IN ("
+
 		// loop through all items
 		for _, item := range b.Request.Remove.WhiteList {
 			// if the item is deleted we don't add it to the query
@@ -187,7 +237,7 @@ func Delete(app *application.App, userId string, b Budget) error {
 			if err != nil {
 				return err
 			}
-	
+
 			// execute query
 			if _, err := stmt.Exec(vals...); err != nil {
 				return err

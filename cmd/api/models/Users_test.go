@@ -66,7 +66,7 @@ func TestUserDoesNotExist(t *testing.T) {
 	test.MockExpectations(t, mock)
 }
 
-func TestSuccessfulGetCredential(t *testing.T) {
+func TestGetCredential(t *testing.T) {
 	app, mock := test.GetMockApp()
 	defer app.DB.Client.Close()
 

@@ -3,7 +3,7 @@ package router
 import (
 	m "github.com/elopez00/scale-backend/cmd/api/middleware"
 	"github.com/elopez00/scale-backend/cmd/api/sdk/auth"
-	b "github.com/elopez00/scale-backend/cmd/api/sdk/budgeting"
+	b "github.com/elopez00/scale-backend/cmd/api/sdk/budget"
 	p "github.com/elopez00/scale-backend/cmd/api/sdk/plaid"
 	"github.com/elopez00/scale-backend/pkg/app"
 	"github.com/julienschmidt/httprouter"
@@ -19,6 +19,7 @@ func Get(app *app.App) *httprouter.Router {
 	mux.GET("/v0/getLinkToken", m.Authenticate(p.GetPlaidToken(app), app))
 	mux.GET("/v0/getTransactions", m.Authenticate(p.GetTransactions(app), app))
 	mux.GET("/v0/getBalances", m.Authenticate(p.GetBalance(app), app))
+	mux.GET("/v0/getBudget", m.Authenticate(b.Get(app), app))
 	mux.GET("/v0/logout", auth.Logout(app))
 	mux.GET("/v0/", m.Authenticate(auth.AuthCheck(), app))
 

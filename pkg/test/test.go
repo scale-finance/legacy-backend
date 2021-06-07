@@ -109,7 +109,18 @@ func PostWithCookie(endpoint string, handler httprouter.Handle, body io.Reader, 
 // expectations were not met for the given mock.
 func MockExpectations(t *testing.T, mock sqlmock.Sqlmock) {
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Error("There were unfulfilled expectations:", err)
+		t.Fatal("There were unfulfilled expectations:", err)
+		return
+	}
+}
+
+// Function that will take in the testing object and the mock
+// used for database testing and return a testing error if the
+// expectations were met given the mock. Used for testing 
+// failure
+func MockFailure(t *testing.T, mock sqlmock.Sqlmock) {
+	if err := mock.ExpectationsWereMet(); err == nil {
+		t.Fatal("This function should not have successfully executed")
 		return
 	}
 }
@@ -123,7 +134,7 @@ func Response(t* testing.T, res *httptest.ResponseRecorder, expected int) {
 		var response models.Response
 		json.NewDecoder(res.Body).Decode(&response)
 
-		t.Errorf("Expected %v, got %v, with an error message: %v", expected, res.Code, response.Message)
+		t.Fatalf("Expected %v, got %v, with an error message: %v", expected, res.Code, response.Message)
 		return
 	}
 }
@@ -135,10 +146,20 @@ func Response(t* testing.T, res *httptest.ResponseRecorder, expected int) {
 func ModelMethod(t* testing.T, err error, method string) {
 	if err != nil {
 		switch(method) {
-		case "insert": t.Error("There was an error inserting rows to the database:", err); return
-		case "select": t.Error("There was an error getting the rows from the database:", err); return
-		case "delete": t.Error("There was an error deleting rows from the database:", err); return
+		case "insert": t.Fatal("There was an error inserting rows to the database:", err); return
+		case "select": t.Fatal("There was an error getting the rows from the database:", err); return
+		case "delete": t.Fatal("There was an error deleting rows from the database:", err); return
 		}
+	}
+}
+
+// Given an error and a testing object, this function will determine
+// if there is an error in the execution of the model's method and
+// will return a testing error if the function successfully 
+// executes. This is for testing method failure.
+func ModelMethodFailure(t *testing.T, err error) {
+	if err == nil {
+		t.Fatal("This function should not have successfully executed")
 	}
 }
 
