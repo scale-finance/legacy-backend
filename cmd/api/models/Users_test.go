@@ -26,11 +26,9 @@ func TestUserCreate(t *testing.T) {
 		WithArgs(user.Id, user.FirstName, user.LastName, user.Email, user.Password).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
-	user.Create(app)
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expections: %s", err)
-		return
-	}
+	err := user.Create(app)
+	test.ModelMethod(t, err, "insert")
+	test.MockExpectations(t, mock)
 }
 
 func TestUserDoesExists(t *testing.T) {
@@ -44,14 +42,12 @@ func TestUserDoesExists(t *testing.T) {
 	mock.ExpectQuery(query).WillReturnRows(rows)
 
 	exists := user.Exists(app)
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
-		return
-	}
 	if !exists {
 		t.Error("The user should exist")
 		return
 	}
+
+	test.MockExpectations(t, mock)
 }
 
 func TestUserDoesNotExist(t *testing.T) {
@@ -62,16 +58,12 @@ func TestUserDoesNotExist(t *testing.T) {
 	mock.ExpectQuery(query)
 
 	exists := user.Exists(app)
-
 	if exists {
 		t.Error("User sould not exist")
 		return
 	}
 
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("There were unfulfilled expectations: %s", err)
-		return
-	}
+	test.MockExpectations(t, mock)
 }
 
 func TestSuccessfulGetCredential(t *testing.T) {
@@ -85,11 +77,8 @@ func TestSuccessfulGetCredential(t *testing.T) {
 	mock.ExpectQuery(query).WillReturnRows(rows)
 
 	var actualUser models.User
-	if err := user.GetCredentials(app, &actualUser); err != nil {
-		t.Errorf("Process should have run without errors, instead got: %v", err.Error())
-		return
-	}
-
+	err := user.GetCredentials(app, &actualUser)
+	test.ModelMethod(t, err, "select")
 	if actualUser.Id != user.Id || actualUser.Password != user.Password {
 		t.Error("Credentials are incorrect")
 		return

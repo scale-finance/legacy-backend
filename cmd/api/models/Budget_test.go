@@ -39,15 +39,9 @@ func TestUpdateWhiteList(t *testing.T) {
 		).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
-	if err := budget.Update(app, user.Id); err != nil {
-		t.Error("Error inserting information to database:", err)
-		return
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Error("There were unfulfilled expectations:", err)
-		return
-	}
+	err := budget.Update(app, user.Id)
+	test.ModelMethod(t, err, "insert")
+	test.MockExpectations(t, mock)
 }
 
 func TestUpdateCategory(t *testing.T) {
@@ -80,15 +74,9 @@ func TestUpdateCategory(t *testing.T) {
 		).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
-	if err := budget.Update(app, user.Id); err != nil {
-		t.Error("Error inserting data into database:", err)
-		return
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Error("There were unfulfilled expectations:", err)
-		return
-	}
+	err := budget.Update(app, user.Id)
+	test.ModelMethod(t, err, "insert")
+	test.MockExpectations(t, mock)
 }
 
 func TestUpdateBudget(t *testing.T) {
@@ -140,15 +128,9 @@ func TestUpdateBudget(t *testing.T) {
 		).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
-	if err := budget.Update(app, user.Id); err != nil {
-		t.Error("There was an error updating the budget:", err)
-		return
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Error("There were unfulfilled expectations:", err)
-		return
-	}
+	err := budget.Update(app, user.Id)
+	test.ModelMethod(t, err, "insert")
+	test.MockExpectations(t, mock)
 }
 
 func TestDeleteCategoryAndListItems(t *testing.T) {
@@ -181,15 +163,9 @@ func TestDeleteCategoryAndListItems(t *testing.T) {
 		WithArgs(user.Id, budget.Request.Remove.Categories[0].Id).
 		WillReturnResult(sqlmock.NewResult(0, 3))
 	
-	if err := models.Delete(app, user.Id, budget); err != nil {
-		t.Error("There was an error deleting request rows in the database: ", err)
-		return
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Error("There were unmet expectations:", err)
-		return
-	}
+	err := models.Delete(app, user.Id, budget)
+	test.ModelMethod(t, err, "delete")
+	test.MockExpectations(t, mock)
 }
 
 func TestDeleteWhiteListItem(t *testing.T) {
@@ -218,15 +194,9 @@ func TestDeleteWhiteListItem(t *testing.T) {
 		).
 		WillReturnResult(sqlmock.NewResult(0, 2))
 	
-	if err := models.Delete(app, user.Id, budget); err != nil {
-		t.Error("There was an error deleting the rows from the database:", err)
-		return
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Error("There were unfulfilled expectations:", err)
-		return
-	}
+	err := models.Delete(app, user.Id, budget)
+	test.ModelMethod(t, err, "delete")
+	test.MockExpectations(t, mock)
 }
 
 func TestDeleteWhiteListAndCategories(t *testing.T) {
@@ -266,13 +236,7 @@ func TestDeleteWhiteListAndCategories(t *testing.T) {
 		WithArgs(user.Id, budget.Request.Remove.WhiteList[2].Id).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
-	if err := models.Delete(app, user.Id, budget); err != nil {
-		t.Error("There was an error deleting rows from database:", err)
-		return
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Error("There were unfulfilled expectations:", err)
-		return
-	}
+	err := models.Delete(app, user.Id, budget)
+	test.ModelMethod(t, err, "delete")
+	test.MockExpectations(t, mock)
 }

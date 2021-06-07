@@ -39,17 +39,7 @@ func TestLinkTokenInvalidClient(t *testing.T) {
 		"AuthToken",
 	)
 
-	if res.Code != http.StatusBadGateway {
-		t.Errorf("Failed get. Expected %v, instead got %v", http.StatusOK, res.Code)
-		return
-	} 
-
-	var response models.Response
-	json.NewDecoder(res.Body).Decode(&response)
-	
-	if response.Message != "Failure to load client" {
-		t.Errorf("Link token shouldn't have been extracted, instead recieved error: %v", response.Message)
-	}
+	test.Response(t, res, http.StatusBadGateway)
 }
 
 func TestExchangePublicTokenInvalidClient(t *testing.T) {
@@ -66,12 +56,7 @@ func TestExchangePublicTokenInvalidClient(t *testing.T) {
 		"AuthToken",
 	)
 
-	if res.Code != http.StatusBadGateway {
-		var response models.Response
-		json.NewDecoder(res.Body).Decode(&response)
-
-		t.Errorf("Expected %v, got %v, with an error message: %v", http.StatusBadGateway, res.Code, response.Message)
-	}
+	test.Response(t, res, http.StatusBadGateway)
 }
 
 func TestGetTransactionsInvalidClient(t *testing.T) {
@@ -88,12 +73,7 @@ func TestGetTransactionsInvalidClient(t *testing.T) {
 		"AuthToken",
 	)
 
-	if res.Code != http.StatusBadGateway {
-		var response models.Response
-		json.NewDecoder(res.Body).Decode(&response)
-
-		t.Errorf("Expected %v, got %v, with an error message: %v", http.StatusBadGateway, res.Code, response.Message)
-	}
+	test.Response(t, res, http.StatusBadGateway)
 }
 
 func TestGetBalancesInvalidClient(t *testing.T) {
@@ -107,12 +87,7 @@ func TestGetBalancesInvalidClient(t *testing.T) {
 		"AuthToken",
 	)
 
-	if res.Code != http.StatusBadGateway {
-		var response models.Response
-		json.NewDecoder(res.Body).Decode(&response)
-
-		t.Errorf("Expected %v, got %v, with an error message: %v", http.StatusBadGateway, res.Code, response.Message)
-	}
+	test.Response(t, res, http.StatusBadGateway)
 }
 
 // * Test calls with valid Plaid Clients *
@@ -121,21 +96,14 @@ func TestGetLinkToken(t *testing.T) {
 	app, _ := test.GetPlaidMockApp()
 	defer app.DB.Client.Close()
 
-	if res := test.GetWithCookie(
+	res := test.GetWithCookie(
 		"/v0/getLinkToken",
 		m.Authenticate(p.GetPlaidToken(app), app),
 		app,
 		"AuthToken",
-	); res.Code != http.StatusOK {
-		t.Errorf("Failed get. Expected %v, instead got %v", http.StatusOK, res.Code)
-	} else {
-		var response models.Response
-		json.NewDecoder(res.Body).Decode(&response)
-
-		if response.Message != "Successfully recieved link token from plaid" {
-			t.Errorf("Link token was not extracted successfuly, instead recieved error: %v", response.Message)
-		}
-	}
+	)
+	
+	test.Response(t, res, http.StatusOK)
 }
 
 func TestGetTransactions(t *testing.T) {
@@ -155,13 +123,7 @@ func TestGetTransactions(t *testing.T) {
 		"AuthToken",
 	)
 
-	if res.Code != http.StatusOK {
-		var response models.Response
-		json.NewDecoder(res.Body).Decode(&response)
-
-		t.Errorf("This call returned the wrong http status. Expected %v, got %v", http.StatusOK, res.Code)
-		t.Error("The call did not return the intended result, instead", response.Message)
-	}
+	test.Response(t, res, http.StatusOK)
 }
 
 func TestGetBalances(t *testing.T) {
@@ -182,18 +144,7 @@ func TestGetBalances(t *testing.T) {
 		"AuthToken",
 	)
 
-	var response models.Response
-	json.NewDecoder(res.Body).Decode(&response)
-
-	if res.Code != http.StatusOK {
-		t.Errorf("There was an error getting account balances, expected 200, got: %v, with error message %v", res.Code, response)
-		return
-	}
-
-	if response.Result == nil {
-		t.Error("The call was successful, but the function did not return a valid response")
-		return
-	}
+	test.Response(t, res, http.StatusOK)
 }
 
 // * Testing error messages
@@ -212,12 +163,7 @@ func TestExchangePublicTokenInvalidToken(t *testing.T) {
 		"AuthToken",
 	)
 
-	if res.Code != http.StatusBadGateway {
-		var response models.Response
-		json.NewDecoder(res.Body).Decode(&response)
-
-		t.Errorf("Expected %v, got %v, with an error message: %v", http.StatusBadGateway, res.Code, response.Message)
-	}
+	test.Response(t, res, http.StatusBadGateway)
 }
 
 func TestGetBalancesInvalidToken(t *testing.T) {
@@ -231,10 +177,5 @@ func TestGetBalancesInvalidToken(t *testing.T) {
 		"AuthToken",
 	)
 
-	if res.Code != http.StatusBadGateway {
-		var response models.Response
-		json.NewDecoder(res.Body).Decode(&response)
-
-		t.Errorf("Expected %v, got %v, with an error message: %v", http.StatusBadGateway, res.Code, response.Message)
-	}
+	test.Response(t, res, http.StatusBadGateway)
 }

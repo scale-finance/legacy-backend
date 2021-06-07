@@ -26,15 +26,9 @@ func TestTokenAdd(t *testing.T) {
 		WithArgs(user.Id, token.Value, token.Id).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
-	if err := token.Add(app, user.Id); err != nil {
-		t.Error("There was an error adding the token to the database: ", err)
-		return
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expections: %s", err)
-		return
-	}
+	err := token.Add(app, user.Id)
+	test.ModelMethod(t, err, "insert")
+	test.MockExpectations(t, mock)
 }
 
 func TestGetTokens(t *testing.T) {
@@ -48,12 +42,9 @@ func TestGetTokens(t *testing.T) {
 	query := `SELECT id, token, itemID FROM plaidtokens WHERE id\="goingdowntosouthpark"`
 	mock.ExpectQuery(query).WillReturnRows(rows)
 
-	tokens, _ := models.GetTokens(app, user.Id)
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("There were unfulfilled expectations: %s", err)
-		return
-	}
+	tokens, err := models.GetTokens(app, user.Id)
+	test.ModelMethod(t, err, "select")
+	test.MockExpectations(t, mock)
 
 	if len(tokens) == 0 {
 		t.Error("The function did not return the tokens")

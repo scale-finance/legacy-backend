@@ -104,7 +104,9 @@ func PostWithCookie(endpoint string, handler httprouter.Handle, body io.Reader, 
 	return res
 }
 
-// This function test mock expectations
+// Function that will take in the testing object and the mock 
+// used for database testing and return a testing error if the 
+// expectations were not met for the given mock.
 func MockExpectations(t *testing.T, mock sqlmock.Sqlmock) {
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Error("There were unfulfilled expectations:", err)
@@ -112,13 +114,31 @@ func MockExpectations(t *testing.T, mock sqlmock.Sqlmock) {
 	}
 }
 
-// this functions tests http resonses
+// Will take in a testing object, a response recorder, and an expected status code.
+// If the code from the response does not match the code from the expected parameter,
+// then this function will return a testing error with the response message, and a
+// comparison of the response codes.
 func Response(t* testing.T, res *httptest.ResponseRecorder, expected int) {
 	if res.Code != expected {
 		var response models.Response
 		json.NewDecoder(res.Body).Decode(&response)
 
 		t.Errorf("Expected %v, got %v, with an error message: %v", expected, res.Code, response.Message)
+		return
+	}
+}
+
+// Given a method, an error, and a testing object, this function 
+// will determine if the error is not nil and then return a 
+// testing error with a description that will correspond to the 
+// described method in the parameter
+func ModelMethod(t* testing.T, err error, method string) {
+	if err != nil {
+		switch(method) {
+		case "insert": t.Error("There was an error inserting rows to the database:", err); return
+		case "select": t.Error("There was an error getting the rows from the database:", err); return
+		case "delete": t.Error("There was an error deleting rows from the database:", err); return
+		}
 	}
 }
 
