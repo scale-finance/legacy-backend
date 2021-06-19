@@ -85,7 +85,7 @@ func ExchangePublicToken(app *application.App) httprouter.Handle {
 	}
 }
 
-// This function will get transactions from the past 2 months from all bank accounts
+// This function will get transactions from the past 12 months from all bank accounts
 // affiliated with the user. If there is an error with the database retrieval or the
 // plaid client call, this will be reflected in the json response accordingly.
 func GetTransactions(app *application.App) httprouter.Handle {
@@ -102,10 +102,10 @@ func GetTransactions(app *application.App) httprouter.Handle {
 
 		// determines the ending and starting dates to retrieve transactions
 		const iso8601TimeFormat = "2006-01-02"
-		startDate := time.Now().Add(-30 * 24 * time.Hour).Format(iso8601TimeFormat)
+		startDate := time.Now().Add(-12 * 30 * 24 * time.Hour).Format(iso8601TimeFormat)
 		endDate := time.Now().Format(iso8601TimeFormat)
 
-		var transactionHistory []plaid.Transaction
+		transactions := make(map[string][]plaid.Transaction)
 		for i := range tokens {
 			res, err := app.Plaid.Client.GetTransactions(tokens[i].Value, startDate, endDate)
 			if err != nil {
@@ -113,12 +113,14 @@ func GetTransactions(app *application.App) httprouter.Handle {
 				models.CreateError(w, http.StatusBadGateway, msg, err)
 				return
 			}
-
-			transactionHistory = append(transactionHistory, res.Transactions...)
+			
+			for _, transaction := range res.Transactions {
+				transactions[transaction.AccountID] = append(transactions[transaction.AccountID], transaction)
+			}
 		}
 
 		msg := "Successfully retrieved transactions from all bank accounts"
-		models.CreateResponse(w, msg, transactionHistory)
+		models.CreateResponse(w, msg, transactions)
 	}
 }
 
@@ -156,8 +158,11 @@ func GetBalance(app *application.App) httprouter.Handle {
 				case "depository":
 					{
 						balance.Liquid = append(balance.Liquid, models.BType{
-							Current: res.Accounts[j].Balances.Current,
-							Name:    res.Accounts[j].Name,
+							Current:     res.Accounts[j].Balances.Current,
+							Id: 		 res.Accounts[j].AccountID,
+							Name:        res.Accounts[j].Name,
+							Institution: tokens[i].Name,
+							Mask:        res.Accounts[j].Mask,
 						})
 						balance.Net.Liquid += res.Accounts[j].Balances.Current
 						balance.Net.Total += res.Accounts[j].Balances.Current
@@ -165,9 +170,12 @@ func GetBalance(app *application.App) httprouter.Handle {
 				case "credit":
 					{
 						balance.Credit = append(balance.Credit, models.BType{
-							Current: res.Accounts[j].Balances.Current,
-							Name:    res.Accounts[j].Name,
-							Limit:   res.Accounts[j].Balances.Limit,
+							Current:     res.Accounts[j].Balances.Current,
+							Id: 		 res.Accounts[j].AccountID,
+							Name:        res.Accounts[j].Name,
+							Institution: tokens[i].Name,
+							Mask:        res.Accounts[j].Mask,
+							Limit:       res.Accounts[j].Balances.Limit,
 						})
 						balance.Net.Credit += res.Accounts[j].Balances.Current
 						balance.Net.Total -= res.Accounts[j].Balances.Current
@@ -175,8 +183,10 @@ func GetBalance(app *application.App) httprouter.Handle {
 				case "loan":
 					{
 						balance.Loan = append(balance.Loan, models.BType{
-							Current: res.Accounts[j].Balances.Current,
-							Name:    res.Accounts[j].Name,
+							Current:     res.Accounts[j].Balances.Current,
+							Id: 		 res.Accounts[j].AccountID,
+							Name:        res.Accounts[j].Name,
+							Institution: tokens[i].Name,
 						})
 						balance.Net.Loan += res.Accounts[j].Balances.Current
 						balance.Net.Total -= res.Accounts[j].Balances.Current

@@ -43,6 +43,7 @@ type Budget struct {
 // This function will get the budget of the user from the database given
 // the user id and will return it as a Budget model. If the execution of
 // this function fails at any given point, it will return the error.
+// TODO make sure to implement liabilities so that last credit card payment can be seen
 func GetBudget(app *application.App, userId string) (Budget, error) {
 	var budget Budget                          // output budget
 	catMap := make(map[string][]WhiteListItem) // map containing all whitelist items pertaining to a category
