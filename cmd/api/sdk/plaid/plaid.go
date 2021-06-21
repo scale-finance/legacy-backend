@@ -3,6 +3,7 @@ package plaid
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -146,18 +147,41 @@ func GetBalance(app *application.App) httprouter.Handle {
 
 		for _, token := range tokens {
 			// get balance response
+			var backup plaid.GetBalancesResponse
+
+			// get liabilities
 			res, err := app.Plaid.Client.GetLiabilities(token.Value)
-			if err != nil {
-				msg := "Error retrieving balance from client"
+
+			// if getting liabilities fails because the product is not supported, then try to get 
+			// the balances to at least have general info and it will log it to the server. If the 
+			// liabilities call or the balances call fail for any other reason, it will return
+			// as json response
+			if err != nil && len(err.Error()) > 107 && err.Error()[85:107] == "PRODUCTS_NOT_SUPPORTED" {
+				log.Println(err) 
+				
+				if backup, err = app.Plaid.Client.GetBalances(token.Value); err != nil {
+					msg := "Error retrieving Liabilities from client:"
+					models.CreateError(w, http.StatusBadGateway, msg, err)
+					return
+				}
+			} else if err != nil { 
+				msg := "Error retrieving Liabilities from client"
 				models.CreateError(w, http.StatusBadGateway, msg, err)
+				return
+			}
+			
+			// loop through all accounts related to that token
+			if len(backup.Accounts) == 0 {
+				// get liabilities and convert them to struct for use
+				liabilities := models.PlaidLiabilities(res.Liabilities)
+				
+				for _, account := range res.Accounts {
+					balance.AddBalance(token.Institution, account, &liabilities)
+				}
 			}
 
-			// get liabilities and convert them to struct for use
-			liabilities := models.PlaidLiabilities(res.Liabilities)
-
-			// loop through all accounts related to that token
 			for _, account := range res.Accounts {
-				balance.AddBalance(token.Institution, account, &liabilities)
+				balance.AddBalance(token.Institution, account, &models.PlaidLiabilities{})
 			}
 		}
 

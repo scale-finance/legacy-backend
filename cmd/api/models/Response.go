@@ -36,7 +36,7 @@ func CreateResponse(w http.ResponseWriter, message string, result interface{}) {
 // to the system. This error can be nil
 func CreateError(w http.ResponseWriter, status int, message string, system error) {
 	if system != nil {
-		log.Print(system.Error())
+		log.Println(system.Error())
 	}
 	encoder := json.NewEncoder(w)
 

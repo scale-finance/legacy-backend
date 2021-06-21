@@ -41,6 +41,11 @@ type PlaidLiabilities struct {
 // Given the institution, account, and liability, this function will add that balance to the
 // balance object.
 func (b *Balance) AddBalance(institution string, account plaid.Account, liabilities *PlaidLiabilities) {
+	var (
+		due  float64 // payment due from last statement
+		date string // payment due date from last statement
+	)
+
 	switch account.Type {
 	case "depository": 
 		{
@@ -58,64 +63,73 @@ func (b *Balance) AddBalance(institution string, account plaid.Account, liabilit
 	case "credit":
 		{
 			if len(liabilities.Credit) != 0 {
-				b.Credit = append(b.Credit, BType{
+				due = float64(liabilities.Credit[0].LastPaymentAmount)
+				date = string(liabilities.Credit[0].LastPaymentDate)
+				
+				// push back liabilities
+				liabilities.Credit = liabilities.Credit[1:len(liabilities.Credit)]
+			}
+
+			b.Credit = append(b.Credit, BType{
+				Institution: institution,
+				Current:     account.Balances.Current,
+				Id:          account.AccountID,
+				Name:        account.Name,
+				Mask:        account.Mask,
+				Limit:       account.Balances.Limit,
+				Due:         due,
+				PaymentDate: date,
+			})
+	
+			b.Net.Credit += account.Balances.Current
+			b.Net.Total -= account.Balances.Current
+		}
+	default:
+		{
+			if account.Subtype == "student" {
+				if len(liabilities.Student) != 0 {
+					due = float64(liabilities.Student[0].LastPaymentAmount)
+					date = string(liabilities.Student[0].LastPaymentDate)
+
+					// push back liabilities
+					liabilities.Student = liabilities.Student[1:len(liabilities.Student)]
+				}
+
+				b.Loan = append(b.Loan, BType{
 					Institution: institution,
 					Current:     account.Balances.Current,
 					Id:          account.AccountID,
 					Name:        account.Name,
 					Mask:        account.Mask,
 					Limit:       account.Balances.Limit,
-					Due:         liabilities.Credit[0].LastPaymentAmount,
-					PaymentDate: liabilities.Credit[0].LastPaymentDate,
+					Due:         due,
+					PaymentDate: date,
 				})
 		
-				b.Net.Credit += account.Balances.Current
+				b.Net.Loan += account.Balances.Current
 				b.Net.Total -= account.Balances.Current
-		
-				// push back liabilities
-				liabilities.Credit = liabilities.Credit[1:len(liabilities.Credit)]
-			}
-		}
-	default:
-		{
-			if account.Subtype == "student" {
-				if len(liabilities.Student) != 0 {
-					b.Loan = append(b.Loan, BType{
-						Institution: institution,
-						Current:     account.Balances.Current,
-						Id:          account.AccountID,
-						Name:        account.Name,
-						Mask:        account.Mask,
-						Limit:       account.Balances.Limit,
-						Due:         liabilities.Student[0].LastPaymentAmount,
-						PaymentDate: liabilities.Student[0].LastPaymentDate,
-					})
-			
-					b.Net.Loan += account.Balances.Current
-					b.Net.Total -= account.Balances.Current
-			
-					// push back liabilities
-					liabilities.Student = liabilities.Student[1:len(liabilities.Student)]
-				}
 			} else {
 				if len(liabilities.Mortgage) != 0 {
-					b.Loan = append(b.Loan, BType{
-						Institution: institution,
-						Current:     account.Balances.Current,
-						Id:          account.AccountID,
-						Name:        account.Name,
-						Mask:        account.Mask,
-						Limit:       account.Balances.Limit,
-						Due:         liabilities.Mortgage[0].LastPaymentAmount,
-						PaymentDate: liabilities.Mortgage[0].LastPaymentDate,
-					})
-			
-					b.Net.Loan += account.Balances.Current
-					b.Net.Total -= account.Balances.Current
-			
+					due = float64(liabilities.Mortgage[0].LastPaymentAmount)
+					date = string(liabilities.Mortgage[0].LastPaymentDate)
+
 					// push back liabilities
 					liabilities.Mortgage = liabilities.Mortgage[1:len(liabilities.Mortgage)]
 				}
+				
+				b.Loan = append(b.Loan, BType{
+					Institution: institution,
+					Current:     account.Balances.Current,
+					Id:          account.AccountID,
+					Name:        account.Name,
+					Mask:        account.Mask,
+					Limit:       account.Balances.Limit,
+					Due:         due,
+					PaymentDate: date,
+				})
+		
+				b.Net.Loan += account.Balances.Current
+				b.Net.Total -= account.Balances.Current
 			}
 		}
 	}
