@@ -12,7 +12,7 @@ import (
 type Token struct {
 	Value string `json:"value"`
 	Id    string `json:"id"`
-	Name  string `json:"name"`
+	Institution  string `json:"name"`
 }
 
 // Method adds the permanent plaid token and stores into the plaidtokens table with the
@@ -26,7 +26,7 @@ func (t *Token) Add(app *application.App, userId string) error {
 		return err
 	}
 
-	_, err = stmt.Exec(userId, t.Value, t.Id, t.Name)
+	_, err = stmt.Exec(userId, t.Value, t.Id, t.Institution)
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func GetTokens(app *application.App, userId string) ([]*Token, error) {
 	// loop over all the rows and create a token for each
 	for rows.Next() {
 		token := new(Token)
-		if err := rows.Scan(&placeholder, &token.Value, &token.Id, &token.Name); err != nil {
+		if err := rows.Scan(&placeholder, &token.Value, &token.Id, &token.Institution); err != nil {
 			return nil, err
 		}
 

@@ -16,7 +16,7 @@ import (
 var token = models.Token{
 	Value: "access-sandbox-3b6a6577-4c02-4fc3-a213-b8adf828c38f",
 	Id:    "nothin",
-	Name:  "institution",
+	Institution:  "institution",
 }
 
 var publicToken = models.Token{
@@ -112,7 +112,7 @@ func TestGetTransactions(t *testing.T) {
 	defer app.DB.Client.Close()
 
 	rows := sqlmock.NewRows([]string{"id", "token", "itemID", "institution"}).
-		AddRow(user.Id, token.Value, token.Id, token.Name)
+		AddRow(user.Id, token.Value, token.Id, token.Institution)
 
 	query := `SELECT id, token, itemID, institution FROM plaidtokens WHERE id\="testvalue"`
 	mock.ExpectQuery(query).WillReturnRows(rows)
@@ -128,12 +128,12 @@ func TestGetTransactions(t *testing.T) {
 }
 
 func TestGetBalances(t *testing.T) {
-	app, mock := test.GetMockApp()
+	app, mock := test.GetPlaidMockApp()
 	defer app.DB.Client.Close()
 
 	// mock the database retrieval
 	rows := sqlmock.NewRows([]string{"id", "token", "itemID", "institution"}).
-		AddRow(user.Id, token.Value, token.Id, token.Name)
+		AddRow(user.Id, token.Value, token.Id, token.Institution)
 
 	query := `SELECT id, token, itemID, institution FROM plaidtokens WHERE id\="testvalue"`
 	mock.ExpectQuery(query).WillReturnRows(rows)

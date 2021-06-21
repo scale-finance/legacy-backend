@@ -53,31 +53,5 @@ func CreateError(w http.ResponseWriter, status int, message string, system error
 
 // * Plaid responses
 
-// define a struct for balance types
-type BType struct {
-	Current     float64 `json:"current"`
-	Name        string  `json:"name"`
-	Limit       float64 `json:"limit,omitempty"`
-	Institution string  `json:"institution"`
-	Mask        string  `json:"mask"`
-	Id			string  `json:"id"`
-}
-
-// define a struct for balance totals
-type BTotal struct {
-	Liquid float64 `json:"liquid"`
-	Credit float64 `json:"credit"`
-	Loan   float64 `json:"loan"`
-	Total  float64 `json:"total"`
-}
-
-// define a struct for the balance response
-type Balance struct {
-	Liquid []BType `json:"liquid"`
-	Credit []BType `json:"credit"`
-	Loan   []BType `json:"loan"`
-	Net    BTotal  `json:"net"`
-}
-
 // for use of context keys
 type Key string

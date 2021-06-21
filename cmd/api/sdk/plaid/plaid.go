@@ -113,7 +113,7 @@ func GetTransactions(app *application.App) httprouter.Handle {
 				models.CreateError(w, http.StatusBadGateway, msg, err)
 				return
 			}
-			
+
 			for _, transaction := range res.Transactions {
 				transactions[transaction.AccountID] = append(transactions[transaction.AccountID], transaction)
 			}
@@ -143,55 +143,21 @@ func GetBalance(app *application.App) httprouter.Handle {
 		// define a balance object and loop through tokens to start
 		// creating it
 		var balance models.Balance
-		for i := range tokens {
+
+		for _, token := range tokens {
 			// get balance response
-			res, err := app.Plaid.Client.GetBalances(tokens[i].Value)
+			res, err := app.Plaid.Client.GetLiabilities(token.Value)
 			if err != nil {
 				msg := "Error retrieving balance from client"
 				models.CreateError(w, http.StatusBadGateway, msg, err)
 			}
 
+			// get liabilities and convert them to struct for use
+			liabilities := models.PlaidLiabilities(res.Liabilities)
+
 			// loop through all accounts related to that token
-			for j := range res.Accounts {
-				// determine what type it is and add it to the response
-				switch res.Accounts[j].Type {
-				case "depository":
-					{
-						balance.Liquid = append(balance.Liquid, models.BType{
-							Current:     res.Accounts[j].Balances.Current,
-							Id: 		 res.Accounts[j].AccountID,
-							Name:        res.Accounts[j].Name,
-							Institution: tokens[i].Name,
-							Mask:        res.Accounts[j].Mask,
-						})
-						balance.Net.Liquid += res.Accounts[j].Balances.Current
-						balance.Net.Total += res.Accounts[j].Balances.Current
-					}
-				case "credit":
-					{
-						balance.Credit = append(balance.Credit, models.BType{
-							Current:     res.Accounts[j].Balances.Current,
-							Id: 		 res.Accounts[j].AccountID,
-							Name:        res.Accounts[j].Name,
-							Institution: tokens[i].Name,
-							Mask:        res.Accounts[j].Mask,
-							Limit:       res.Accounts[j].Balances.Limit,
-						})
-						balance.Net.Credit += res.Accounts[j].Balances.Current
-						balance.Net.Total -= res.Accounts[j].Balances.Current
-					}
-				case "loan":
-					{
-						balance.Loan = append(balance.Loan, models.BType{
-							Current:     res.Accounts[j].Balances.Current,
-							Id: 		 res.Accounts[j].AccountID,
-							Name:        res.Accounts[j].Name,
-							Institution: tokens[i].Name,
-						})
-						balance.Net.Loan += res.Accounts[j].Balances.Current
-						balance.Net.Total -= res.Accounts[j].Balances.Current
-					}
-				}
+			for _, account := range res.Accounts {
+				balance.AddBalance(token.Institution, account, &liabilities)
 			}
 		}
 

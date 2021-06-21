@@ -3,17 +3,16 @@ package models_test
 import (
 	"testing"
 
-	"github.com/elopez00/scale-backend/pkg/test"
 	"github.com/elopez00/scale-backend/cmd/api/models"
+	"github.com/elopez00/scale-backend/pkg/test"
 
 	"github.com/DATA-DOG/go-sqlmock"
 )
 
-
 var token = models.Token{
 	Value: "randomaccess",
 	Id:    "randomid",
-	Name:  "Bank of Bank",
+	Institution:  "Bank of Bank",
 }
 
 func TestTokenAdd(t *testing.T) {
@@ -24,7 +23,7 @@ func TestTokenAdd(t *testing.T) {
 	mock.
 		ExpectPrepare(query).
 		ExpectExec().
-		WithArgs(user.Id, token.Value, token.Id, token.Name).
+		WithArgs(user.Id, token.Value, token.Id, token.Institution).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
 	err := token.Add(app, user.Id)
@@ -52,4 +51,3 @@ func TestGetTokens(t *testing.T) {
 		return
 	}
 }
-
