@@ -1,4 +1,4 @@
-package budget
+package sdk
 
 import (
 	"encoding/json"

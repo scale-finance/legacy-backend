@@ -1,4 +1,4 @@
-package budget_test
+package sdk_test
 
 import (
 	"bytes"
@@ -9,48 +9,11 @@ import (
 
 	"github.com/elopez00/scale-backend/cmd/api/middleware"
 	"github.com/elopez00/scale-backend/cmd/api/models"
-	budgeting "github.com/elopez00/scale-backend/cmd/api/sdk/budget"
+	"github.com/elopez00/scale-backend/cmd/api/sdk"
 	"github.com/elopez00/scale-backend/pkg/test"
 
 	"github.com/DATA-DOG/go-sqlmock"
 )
-
-var user = models.User{
-	Id: "testvalue",
-}
-
-var budget = models.Budget{
-	Categories: []models.Category{
-		{Name: "shopping", Budget: 200, WhiteList: []models.WhiteListItem{
-			{Category: "shopping", Name: "Calvin Klien"},
-			{Category: "shopping", Name: "Best Buy"},
-			{Category: "shopping", Name: "Amazon"},
-		}},
-		{Name: "groceries", Budget: 250, WhiteList: []models.WhiteListItem{
-			{Category: "groceries", Name: "Aldi"},
-			{Category: "groceries", Name: "Walmart"},
-		}},
-		{Name: "rent", Budget: 800, WhiteList: []models.WhiteListItem{{Category: "rent", Name: "The Rise"}}},
-	},
-
-	Request: models.UpdateRequest{
-		Update: models.UpdateObject{
-			Categories: []models.Category{
-				{Name: "shopping", Budget: 200, Id: "qwert"},
-				{Name: "groceries", Budget: 250, Id: "asdfag"},
-				{Name: "rent", Budget: 800, Id: ";lkjk"},
-			},
-			WhiteList: []models.WhiteListItem{
-				{Category: "shopping", Name: "Calvin Klien", Id: ";lkjl"},
-				{Category: "shopping", Name: "Best Buy", Id: "asdfasdf"},
-				{Category: "shopping", Name: "Amazon", Id: "qwerqwer"},
-				{Category: "groceries", Name: "Aldi", Id: ";sdlfkgjsd"},
-				{Category: "groceries", Name: "Walmart", Id: "zxcvzxc"},
-				{Category: "rent", Name: "The Rise", Id: ".,mn.,n,mn"},
-			},
-		},
-	},
-}
 
 func TestCreateBudget(t *testing.T) {
 	app, mock := test.GetMockApp()
@@ -82,7 +45,7 @@ func TestCreateBudget(t *testing.T) {
 
 	res := test.PostWithCookie(
 		"/v0/createBudget",
-		middleware.Authenticate(budgeting.Update(app), app),
+		middleware.Authenticate(sdk.Update(app), app),
 		bytes.NewBuffer(jsonObject),
 		app,
 		"AuthToken",

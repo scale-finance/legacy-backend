@@ -1,4 +1,4 @@
-package auth
+package sdk
 
 import (
 	"encoding/json"
@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 	jwt "github.com/dgrijalva/jwt-go"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // onboard user to DB given application sequence. This function is in charge of creating
@@ -174,4 +175,24 @@ func GenerateJWT(app *application.App, id string) (string, error) {
 	} 
 	
 	return token, nil
+}
+
+// * Static functions
+
+// encrypts password with all appropriate settings and conversions for simple use in the
+// main authentication file
+func EncryptPassword(password string) string {
+	encrypted, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(encrypted)
+}
+
+// The purpose of this function is to simplify the code in the authentication file. It works
+// the same as bcrypt's library function, but with preset settings already integrated in the
+// function call itself.
+func HashMatch(password, hash string) bool {
+	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)); err != nil {
+		return false
+	} else {
+		return true
+	}
 }

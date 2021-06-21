@@ -1,4 +1,4 @@
-package plaid_test
+package sdk_test
 
 import (
 	"bytes"
@@ -8,24 +8,9 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	m "github.com/elopez00/scale-backend/cmd/api/middleware"
-	"github.com/elopez00/scale-backend/cmd/api/models"
-	p "github.com/elopez00/scale-backend/cmd/api/sdk/plaid"
+	"github.com/elopez00/scale-backend/cmd/api/sdk"
 	"github.com/elopez00/scale-backend/pkg/test"
 )
-
-var token = models.Token{
-	Value: "access-sandbox-3b6a6577-4c02-4fc3-a213-b8adf828c38f",
-	Id:    "nothin",
-	Institution:  "institution",
-}
-
-var publicToken = models.Token{
-	Value: "public-sandbox-4d532c06-b9b5-4a18-906a-df480f320cc9",
-}
-
-var user = models.User{
-	Id: "testvalue",
-}
 
 // * Test Functions will invalid Plaid clients *
 
@@ -35,7 +20,7 @@ func TestLinkTokenInvalidClient(t *testing.T) {
 
 	res := test.GetWithCookie(
 		"/v0/getLinkToken",
-		m.Authenticate(p.GetPlaidToken(app), app),
+		m.Authenticate(sdk.GetPlaidToken(app), app),
 		app,
 		"AuthToken",
 	)
@@ -51,7 +36,7 @@ func TestExchangePublicTokenInvalidClient(t *testing.T) {
 
 	res := test.PostWithCookie(
 		"/v0/exchangePublicToken",
-		m.Authenticate(p.ExchangePublicToken(app), app),
+		m.Authenticate(sdk.ExchangePublicToken(app), app),
 		bytes.NewBuffer(body),
 		app,
 		"AuthToken",
@@ -68,7 +53,7 @@ func TestGetTransactionsInvalidClient(t *testing.T) {
 
 	res := test.PostWithCookie(
 		"/v0/exchangePublicToken",
-		m.Authenticate(p.GetTransactions(app), app),
+		m.Authenticate(sdk.GetTransactions(app), app),
 		bytes.NewBuffer(body),
 		app,
 		"AuthToken",
@@ -83,7 +68,7 @@ func TestGetBalancesInvalidClient(t *testing.T) {
 
 	res := test.GetWithCookie(
 		"/v0/getBalances",
-		m.Authenticate(p.GetBalance(app), app),
+		m.Authenticate(sdk.GetBalance(app), app),
 		app,
 		"AuthToken",
 	)
@@ -99,7 +84,7 @@ func TestGetLinkToken(t *testing.T) {
 
 	res := test.GetWithCookie(
 		"/v0/getLinkToken",
-		m.Authenticate(p.GetPlaidToken(app), app),
+		m.Authenticate(sdk.GetPlaidToken(app), app),
 		app,
 		"AuthToken",
 	)
@@ -119,7 +104,7 @@ func TestGetTransactions(t *testing.T) {
 
 	res := test.GetWithCookie(
 		"/v0/getTransactions",
-		m.Authenticate(p.GetTransactions(app), app),
+		m.Authenticate(sdk.GetTransactions(app), app),
 		app,
 		"AuthToken",
 	)
@@ -140,7 +125,7 @@ func TestGetBalances(t *testing.T) {
 
 	res := test.GetWithCookie(
 		"/v0/getBalance",
-		m.Authenticate(p.GetBalance(app), app),
+		m.Authenticate(sdk.GetBalance(app), app),
 		app,
 		"AuthToken",
 	)
@@ -159,7 +144,7 @@ func TestExchangePublicTokenInvalidToken(t *testing.T) {
 
 	res := test.PostWithCookie(
 		"/v0/exchangePublicToken",
-		p.ExchangePublicToken(app),
+		sdk.ExchangePublicToken(app),
 		bytes.NewBuffer(body),
 		app,
 		"AuthToken",
@@ -174,7 +159,7 @@ func TestGetBalancesInvalidToken(t *testing.T) {
 
 	res := test.GetWithCookie(
 		"/v0/getBalances",
-		p.GetBalance(app),
+		sdk.GetBalance(app),
 		app,
 		"AuthToken",
 	)

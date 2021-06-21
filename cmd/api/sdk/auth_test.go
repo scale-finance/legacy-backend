@@ -1,4 +1,4 @@
-package auth_test
+package sdk_test
 
 import (
 	"bytes"
@@ -7,20 +7,11 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/elopez00/scale-backend/cmd/api/models"
-	"github.com/elopez00/scale-backend/cmd/api/sdk/auth"
+	"github.com/elopez00/scale-backend/cmd/api/sdk"
 	"github.com/elopez00/scale-backend/pkg/test"
 	
 	"github.com/DATA-DOG/go-sqlmock"
 )
-
-var user = models.User {
-	Id: "goingdowntosouthpark",
-	FirstName: "Stan",
-	LastName: "Marsh",
-	Email: "smarsh@southpark.com",
-	Password: "southpark",
-}
 
 func getBody() io.Reader {
 	body, _ := json.Marshal(user)
@@ -37,7 +28,7 @@ func TestOnboardingSuccess(t *testing.T) {
 	
 	// create body of function
 	body := getBody()
-	res := test.Post("/onboard", auth.Onboard(app), body)
+	res := test.Post("/onboard", sdk.Onboard(app), body)
 	test.Response(t, res, http.StatusOK)
 	test.MockExpectations(t, mock)
 }
@@ -54,7 +45,7 @@ func TestExistingUserError(t *testing.T) {
 
 	// create body of function
 	body := getBody()
-	res := test.Post("/onboard", auth.Onboard(app), body)
+	res := test.Post("/onboard", sdk.Onboard(app), body)
 	test.Response(t, res, http.StatusNotAcceptable)
 	test.MockExpectations(t, mock)
 }
@@ -73,7 +64,7 @@ func TestPasswordIncorrect(t *testing.T) {
 	query := `SELECT email, password, id FROM userinfo WHERE email\="smarsh@southpark\.com"`
 	mock.ExpectQuery(query).WillReturnRows(rows)
 
-	res := test.Post("/login", auth.Login(app), getBody())
+	res := test.Post("/login", sdk.Login(app), getBody())
 	test.Response(t, res, http.StatusUnauthorized)
 	test.MockExpectations(t, mock)
 }
@@ -85,7 +76,7 @@ func TestUserInvalid(t *testing.T) {
 	query := `SELECT email, password, id FROM userinfo WHERE email\="smarsh@southpark\.com"`
 	mock.ExpectQuery(query)
 
-	res := test.Post("/login", auth.Login(app), getBody())
+	res := test.Post("/login", sdk.Login(app), getBody())
 	test.Response(t, res, http.StatusNotFound)
 	test.MockExpectations(t, mock)
 }
@@ -94,7 +85,7 @@ func TestUserSignout(t *testing.T) {
 	app, _ := test.GetMockApp()
 	defer app.DB.Client.Close()
 
-	res := test.GetWithCookie("/v0/logout", auth.Logout(app), app, "AuthToken") 
+	res := test.GetWithCookie("/v0/logout", sdk.Logout(app), app, "AuthToken") 
 	test.Response(t, res, http.StatusOK)
 }
 
@@ -102,6 +93,6 @@ func TestUserSignoutFailure(t *testing.T) {
 	app, _ := test.GetMockApp()
 	defer app.DB.Client.Close()
 
-	res := test.Get("/v0/logout", auth.Logout(app))
+	res := test.Get("/v0/logout", sdk.Logout(app))
 	test.Response(t, res, http.StatusBadRequest)
 }

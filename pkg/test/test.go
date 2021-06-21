@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/elopez00/scale-backend/cmd/api/models"
-	"github.com/elopez00/scale-backend/cmd/api/sdk/auth"
+	"github.com/elopez00/scale-backend/cmd/api/sdk"
 	"github.com/elopez00/scale-backend/pkg/application"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -32,7 +32,7 @@ func GetMockApp() (*application.App, sqlmock.Sqlmock) {
 // This will get a mock application that gets the sandbox keys for plaid. Everything else
 // will be returned just as if GetMockApp() were called.
 func GetPlaidMockApp() (*application.App, sqlmock.Sqlmock) {
-	if err := godotenv.Load("../../../../.env"); err != nil {
+	if err := godotenv.Load("../../../.env"); err != nil {
 		panic(err.Error())
 	}
 	db, mock, _ := sqlmock.New()
@@ -71,7 +71,7 @@ func Get(endpoint string, handler httprouter.Handle) *httptest.ResponseRecorder 
 // function does not take JSON bodies
 func GetWithCookie(endpoint string, handler httprouter.Handle, app *application.App, name string) *httptest.ResponseRecorder {
 	req, _ := http.NewRequest("GET", endpoint, nil)
-	token, _ := auth.GenerateJWT(app, "testvalue")
+	token, _ := sdk.GenerateJWT(app, "testvalue")
 	req.AddCookie(&http.Cookie{
 		Name:    name,
 		Value:   token,
@@ -91,7 +91,7 @@ func GetWithCookie(endpoint string, handler httprouter.Handle, app *application.
 // function will take in a JSON body
 func PostWithCookie(endpoint string, handler httprouter.Handle, body io.Reader, app *application.App, name string) *httptest.ResponseRecorder {
 	req, _ := http.NewRequest("POST", endpoint, body)
-	token, _ := auth.GenerateJWT(app, "testvalue")
+	token, _ := sdk.GenerateJWT(app, "testvalue")
 	req.AddCookie(&http.Cookie{
 		Name:    name,
 		Value:   token,

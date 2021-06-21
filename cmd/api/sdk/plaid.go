@@ -1,4 +1,4 @@
-package plaid
+package sdk
 
 import (
 	"encoding/json"
