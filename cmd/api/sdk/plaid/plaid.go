@@ -6,9 +6,11 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"sync"
 
 	"github.com/elopez00/scale-backend/cmd/api/models"
 	"github.com/elopez00/scale-backend/pkg/application"
+
 	"github.com/julienschmidt/httprouter"
 	"github.com/plaid/plaid-go/plaid"
 )
@@ -106,19 +108,34 @@ func GetTransactions(app *application.App) httprouter.Handle {
 		startDate := time.Now().Add(-12 * 30 * 24 * time.Hour).Format(iso8601TimeFormat)
 		endDate := time.Now().Format(iso8601TimeFormat)
 
-		transactions := make(map[string][]plaid.Transaction)
-		for i := range tokens {
-			res, err := app.Plaid.Client.GetTransactions(tokens[i].Value, startDate, endDate)
-			if err != nil {
-				msg := "Failed to retrieve tokens from Plaid client"
-				models.CreateError(w, http.StatusBadGateway, msg, err)
-				return
-			}
+		// intialize wait group 
+		var waitGroup sync.WaitGroup
 
-			for _, transaction := range res.Transactions {
-				transactions[transaction.AccountID] = append(transactions[transaction.AccountID], transaction)
-			}
+		// make transactions map that will be returned in result
+		transactions := make(map[string][]plaid.Transaction)
+
+		for _, token := range tokens {
+			waitGroup.Add(1)
+
+			go func(token *models.Token) {
+				defer waitGroup.Done()
+
+				// gets the transactions from plaid, if there is any error in the request,
+				// it will be returned as a JSON response
+				res, err := app.Plaid.Client.GetTransactions(token.Value, startDate, endDate)
+				if err != nil {
+					msg := "Failed to retrieve tokens from Plaid client"
+					models.CreateError(w, http.StatusBadGateway, msg, err)
+					return
+				}
+	
+				// loop through all transactions and put them in transactions map
+				for _, transaction := range res.Transactions {
+					transactions[transaction.AccountID] = append(transactions[transaction.AccountID], transaction)
+				}
+			}(token)
 		}
+		waitGroup.Wait()
 
 		msg := "Successfully retrieved transactions from all bank accounts"
 		models.CreateResponse(w, msg, transactions)
@@ -140,50 +157,59 @@ func GetBalance(app *application.App) httprouter.Handle {
 			msg := "There was an error retrieving tokens from database affiliated with user"
 			models.CreateError(w, http.StatusBadGateway, msg, err)
 		}
+		
+		// create waitGroup
+		var waitGroup sync.WaitGroup
 
-		// define a balance object and loop through tokens to start
-		// creating it
+		// define a balance object and loop through tokens to start creating it
 		var balance models.Balance
-
+		
 		for _, token := range tokens {
-			// get balance response
-			var backup plaid.GetBalancesResponse
+			waitGroup.Add(1)
+			
+			go func(token *models.Token) {
+				defer waitGroup.Done()
 
-			// get liabilities
-			res, err := app.Plaid.Client.GetLiabilities(token.Value)
+				// get balance response
+				var backup plaid.GetAccountsResponse
 
-			// if getting liabilities fails because the product is not supported, then try to get 
-			// the balances to at least have general info and it will log it to the server. If the 
-			// liabilities call or the balances call fail for any other reason, it will return
-			// as json response
-			if err != nil && len(err.Error()) > 107 && err.Error()[85:107] == "PRODUCTS_NOT_SUPPORTED" {
-				log.Println(err) 
-				
-				if backup, err = app.Plaid.Client.GetBalances(token.Value); err != nil {
-					msg := "Error retrieving Liabilities from client:"
+				// get liabilities
+				res, err := app.Plaid.Client.GetLiabilities(token.Value)
+
+				// if getting liabilities fails because the product is not supported, then try to get 
+				// the balances to at least have general info and it will log it to the server. If the 
+				// liabilities call or the balances call fail for any other reason, it will return
+				// as json response
+				if err != nil && len(err.Error()) > 107 && err.Error()[85:107] == "PRODUCTS_NOT_SUPPORTED" {
+					log.Println(err) 
+					
+					if backup, err = app.Plaid.Client.GetAccounts(token.Value); err != nil {
+						msg := "Error retrieving Liabilities from client:"
+						models.CreateError(w, http.StatusBadGateway, msg, err)
+						return
+					}
+				} else if err != nil { 
+					msg := "Error retrieving Liabilities from client"
 					models.CreateError(w, http.StatusBadGateway, msg, err)
 					return
 				}
-			} else if err != nil { 
-				msg := "Error retrieving Liabilities from client"
-				models.CreateError(w, http.StatusBadGateway, msg, err)
-				return
-			}
-			
-			// loop through all accounts related to that token
-			if len(backup.Accounts) == 0 {
-				// get liabilities and convert them to struct for use
-				liabilities := models.PlaidLiabilities(res.Liabilities)
-				
-				for _, account := range res.Accounts {
-					balance.AddBalance(token.Institution, account, &liabilities)
-				}
-			}
 
-			for _, account := range res.Accounts {
-				balance.AddBalance(token.Institution, account, &models.PlaidLiabilities{})
-			}
+				// loop through all accounts related to that token
+				if len(backup.Accounts) == 0 {
+					liabilities := models.PlaidLiabilities(res.Liabilities)
+
+					for _, account := range res.Accounts {
+						balance.AddBalance(token.Institution, account, &liabilities)
+					}
+				}
+
+				for _, account := range res.Accounts {
+					balance.AddBalance(token.Institution, account, &models.PlaidLiabilities{})
+				}
+			}(token)
 		}
+
+		waitGroup.Wait()
 
 		// return balance object in result of response
 		msg := "Successfully retrieved balance"

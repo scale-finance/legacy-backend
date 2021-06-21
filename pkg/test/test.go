@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"log"
 	"time"
 
 	"github.com/elopez00/scale-backend/cmd/api/models"
@@ -175,4 +176,9 @@ func executeRequest(req *http.Request, handler *httprouter.Router) *httptest.Res
 	handler.ServeHTTP(rr, req)
 
 	return rr
+}
+
+func Time(start time.Time, name string) {
+    elapsed := time.Since(start)
+    log.Printf("%s took %s", name, elapsed)
 }
