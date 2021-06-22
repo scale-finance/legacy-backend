@@ -23,10 +23,10 @@ func TestCreateBudget(t *testing.T) {
 
 	// test categories query
 	query1 :=
-		`INSERT INTO categories\(id, name, budget, categoryId\) ` +
-			`VALUES \(\?,\?,\?,\?\), \(\?,\?,\?,\?\), \(\?,\?,\?,\?\) ` +
+		`INSERT INTO categories\(id, name, budget, categoryId, color\) ` +
+			`VALUES \(\?,\?,\?,\?,\?\), \(\?,\?,\?,\?,\?\), \(\?,\?,\?,\?,\?\) ` +
 			`AS updated ON DUPLICATE KEY UPDATE ` +
-			`id\=updated\.id, name\=updated\.name, budget\=updated\.budget, categoryId\=updated\.categoryId;`
+			`id\=updated\.id, name\=updated\.name, budget\=updated\.budget, categoryId\=updated\.categoryId, color\=updated\.color;`
 	mock.
 		ExpectPrepare(query1).
 		ExpectExec().
@@ -45,7 +45,7 @@ func TestCreateBudget(t *testing.T) {
 
 	res := test.PostWithCookie(
 		"/v0/createBudget",
-		middleware.Authenticate(sdk.Update(app), app),
+		middleware.Authenticate(sdk.UpdateBudget(app), app),
 		bytes.NewBuffer(jsonObject),
 		app,
 		"AuthToken",

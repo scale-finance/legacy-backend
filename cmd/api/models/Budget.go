@@ -19,6 +19,7 @@ type Category struct {
 	Budget    float64         `json:"budget"`              // amount of money budgeted towards this category
 	Id        string          `json:"id"`                  // category id
 	WhiteList []WhiteListItem `json:"whitelist,omitempty"` // whitelist corresponding to category
+	Color 	  string		  `json:"color"`
 }
 
 // Object containing both category updates and whitelist updates. Neither one or the
@@ -43,7 +44,6 @@ type Budget struct {
 // This function will get the budget of the user from the database given
 // the user id and will return it as a Budget model. If the execution of
 // this function fails at any given point, it will return the error.
-// TODO make sure to implement liabilities so that last credit card payment can be seen
 func GetBudget(app *application.App, userId string) (Budget, error) {
 	var budget Budget                          // output budget
 	catMap := make(map[string][]WhiteListItem) // map containing all whitelist items pertaining to a category
@@ -154,16 +154,16 @@ func UpdateCategories(app *application.App, userId string, categories []Category
 		return nil
 	}
 
-	query := "INSERT INTO categories(id, name, budget, categoryId) VALUES "
+	query := "INSERT INTO categories(id, name, budget, categoryId, color) VALUES "
 	queryEnd :=
 		" AS updated ON DUPLICATE KEY UPDATE id=updated.id, name=updated.name," +
-			" budget=updated.budget, categoryId=updated.categoryId;"
+			" budget=updated.budget, categoryId=updated.categoryId, color=updated.color;"
 
 	vals := []interface{}{}
 
 	for _, category := range categories {
-		query += " (?,?,?,?),"
-		vals = append(vals, userId, category.Name, category.Budget, category.Id)
+		query += " (?,?,?,?,?),"
+		vals = append(vals, userId, category.Name, category.Budget, category.Id, category.Color)
 	}
 
 	// prepare statement

@@ -14,7 +14,7 @@ import (
 // or changes by using a request body in the format of an UpdateRequest. This function will
 // be used to create and change the user's budget in the application. If there is an error,
 // with a query or database connection it will be logged and returned as a JSON response.
-func Update(app *application.App) httprouter.Handle {
+func UpdateBudget(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		defer r.Body.Close()
 
@@ -42,7 +42,7 @@ func Update(app *application.App) httprouter.Handle {
 // object returned in the responses result property. If there is an error with the
 // databse connection or query it will be logged nad returned as a JSON response.
 // TODO make and test this function pls thank you!
-func Get(app *application.App) httprouter.Handle {
+func GetBudget(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 	}

@@ -12,16 +12,16 @@ import (
 
 var testBudget = models.Budget {
 	Categories: []models.Category{
-		{Name: "shopping", Budget: 200, WhiteList: []models.WhiteListItem{
+		{Name: "shopping", Budget: 200, Color: "red", WhiteList: []models.WhiteListItem{
 			{Category: "shopping", Name: "Calvin Klien"},
 			{Category: "shopping", Name: "Best Buy"},
 			{Category: "shopping", Name: "Amazon"},
 		}},
-		{Name: "groceries", Budget: 250, WhiteList: []models.WhiteListItem{
+		{Name: "groceries", Budget: 250, Color: "blue", WhiteList: []models.WhiteListItem{
 			{Category: "groceries", Name: "Aldi"},
 			{Category: "groceries", Name: "Walmart"},
 		}},
-		{Name: "rent", Budget: 800, WhiteList: []models.WhiteListItem{{Category: "rent", Name: "The Rise"}}},
+		{Name: "rent", Budget: 800, Color: "yellow", WhiteList: []models.WhiteListItem{{Category: "rent", Name: "The Rise"}}},
 	},
 }
 
@@ -83,10 +83,10 @@ func TestUpdateCategory(t *testing.T) {
 	defer app.DB.Client.Close()
 	
 	query := 
-		`INSERT INTO categories\(id, name, budget, categoryId\) ` +
-		`VALUES \(\?,\?,\?,\?\), \(\?,\?,\?,\?\) AS updated ` +
+		`INSERT INTO categories\(id, name, budget, categoryId, color\) ` +
+		`VALUES \(\?,\?,\?,\?,\?\), \(\?,\?,\?,\?,\?\) AS updated ` +
 		`ON DUPLICATE KEY UPDATE ` +
-		`id\=updated\.id, name\=updated\.name, budget\=updated\.budget, categoryId\=updated\.categoryId;`
+		`id\=updated\.id, name\=updated\.name, budget\=updated\.budget, categoryId\=updated\.categoryId, color\=updated\.color;`
 	
 	budget := models.Budget {
 		Request: models.UpdateRequest {
@@ -102,8 +102,8 @@ func TestUpdateCategory(t *testing.T) {
 		ExpectPrepare(query).
 		ExpectExec().
 		WithArgs(
-			user.Id, categories[0].Name, categories[0].Budget, categories[0].Id,
-			user.Id, categories[1].Name, categories[1].Budget, categories[1].Id,	
+			user.Id, categories[0].Name, categories[0].Budget, categories[0].Id, categories[0].Color,
+			user.Id, categories[1].Name, categories[1].Budget, categories[1].Id, categories[1].Color,	
 		).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
@@ -120,16 +120,16 @@ func TestUpdateBudget(t *testing.T) {
 	whitelist := testBudgetUpdate.Request.Update.WhiteList
 	
 	query2 := 
-		`INSERT INTO categories\(id, name, budget, categoryId\) ` +
-		`VALUES \(\?,\?,\?,\?\), \(\?,\?,\?,\?\) AS updated ` +
+		`INSERT INTO categories\(id, name, budget, categoryId, color\) ` +
+		`VALUES \(\?,\?,\?,\?,\?\), \(\?,\?,\?,\?,\?\) AS updated ` +
 		`ON DUPLICATE KEY UPDATE ` +
-		`id\=updated\.id, name\=updated\.name, budget\=updated\.budget, categoryId\=updated\.categoryId;`
+		`id\=updated\.id, name\=updated\.name, budget\=updated\.budget, categoryId\=updated\.categoryId, color\=updated\.color;`
 	mock.
 		ExpectPrepare(query2).
 		ExpectExec().
 		WithArgs(
-			user.Id, categories[0].Name, categories[0].Budget, categories[0].Id,
-			user.Id, categories[1].Name, categories[1].Budget, categories[1].Id,
+			user.Id, categories[0].Name, categories[0].Budget, categories[0].Id, categories[0].Color,
+			user.Id, categories[1].Name, categories[1].Budget, categories[1].Id, categories[1].Color,
 		).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
@@ -161,7 +161,7 @@ func TestDeleteCategoryAndListItems(t *testing.T) {
 		Request: models.UpdateRequest {  
 			Remove: models.UpdateObject {
 				Categories: []models.Category {
-					{ "Shopping", 400, "cid123", []models.WhiteListItem {} },
+					{ "Shopping", 400, "cid123", []models.WhiteListItem {}, "#ff5757" },
 				},
 				WhiteList: []models.WhiteListItem {
 					{ "cid123", "Calvin Klein", "something" },
@@ -227,7 +227,7 @@ func TestDeleteWhiteListAndCategories(t *testing.T) {
 		Request: models.UpdateRequest {
 			Remove: models.UpdateObject {
 				Categories: []models.Category {
-					{ "Shopping", 400, "cid123", []models.WhiteListItem {} },
+					{ "Shopping", 400, "cid123", []models.WhiteListItem {}, "#ff5757" },
 				},
 				WhiteList: []models.WhiteListItem {
 					{ "cid123", "Calvin Klein", "something" },
@@ -311,10 +311,10 @@ func TestUpdateFailure(t *testing.T) {
 	app.DB.Client.Close()
 
 	query2 := 
-		`INSERT INTO categories\(id, name, budget, categoryId\) ` +
-		`VALUES \(\?,\?,\?,\?\), \(\?,\?,\?,\?\) AS updated ` +
+		`INSERT INTO categories\(id, name, budget, categoryId, color\) ` +
+		`VALUES \(\?,\?,\?,\?,\?\), \(\?,\?,\?,\?,\?\) AS updated ` +
 		`ON DUPLICATE KEY UPDATE ` +
-		`id\=updated\.id, name\=updated\.name, budget\=updated\.budget, categoryId\=updated\.categoryId;`
+		`id\=updated\.id, name\=updated\.name, budget\=updated\.budget, categoryId\=updated\.categoryId, color\=updated\.color;`
 	mock.
 		ExpectPrepare(query2).
 		ExpectExec().
@@ -342,7 +342,7 @@ func TestDeleteFailure(t *testing.T) {
 		Request: models.UpdateRequest {  
 			Remove: models.UpdateObject {
 				Categories: []models.Category {
-					{ "Shopping", 400, "cid123", []models.WhiteListItem {} },
+					{ "Shopping", 400, "cid123", []models.WhiteListItem {}, "#ff5757" },
 				},
 				WhiteList: []models.WhiteListItem {
 					{ "cid123", "Calvin Klein", "something" },

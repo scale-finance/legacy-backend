@@ -14,11 +14,11 @@ func Get(app *application.App) *httprouter.Router {
 	mux.POST("/v0/onboard", sdk.Onboard(app))
 	mux.POST("/v0/login", sdk.Login(app))
 	mux.POST("/v0/token/exchange", m.Authenticate(sdk.ExchangePublicToken(app), app))
-	mux.POST("/v0/budget/update", m.Authenticate(sdk.Update(app), app))
+	mux.POST("/v0/budget/update", m.Authenticate(sdk.UpdateBudget(app), app))
 	mux.GET("/v0/token/link", m.Authenticate(sdk.GetPlaidToken(app), app))
 	mux.GET("/v0/transactions/get", m.Authenticate(sdk.GetTransactions(app), app))
 	mux.GET("/v0/balances/get", m.Authenticate(sdk.GetBalance(app), app))
-	mux.GET("/v0/budget/get", m.Authenticate(sdk.Get(app), app))
+	mux.GET("/v0/budget/get", m.Authenticate(sdk.GetBudget(app), app))
 	mux.GET("/v0/logout", sdk.Logout(app))
 	mux.GET("/v0/", m.Authenticate(sdk.AuthCheck(), app))
 
