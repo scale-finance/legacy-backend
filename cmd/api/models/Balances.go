@@ -81,7 +81,7 @@ func (b *Balance) AddBalance(institution string, account plaid.Account, liabilit
 				PaymentDate: date,
 			})
 	
-			b.Net.Credit += account.Balances.Current
+			b.Net.Credit -= account.Balances.Current
 			b.Net.Total -= account.Balances.Current
 		}
 	default:
@@ -106,7 +106,7 @@ func (b *Balance) AddBalance(institution string, account plaid.Account, liabilit
 					PaymentDate: date,
 				})
 		
-				b.Net.Loan += account.Balances.Current
+				b.Net.Loan -= account.Balances.Current
 				b.Net.Total -= account.Balances.Current
 			} else {
 				if len(liabilities.Mortgage) != 0 {
@@ -128,7 +128,7 @@ func (b *Balance) AddBalance(institution string, account plaid.Account, liabilit
 					PaymentDate: date,
 				})
 		
-				b.Net.Loan += account.Balances.Current
+				b.Net.Loan -= account.Balances.Current
 				b.Net.Total -= account.Balances.Current
 			}
 		}
