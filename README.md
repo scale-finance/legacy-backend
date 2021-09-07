@@ -39,7 +39,7 @@ My goals personal goals for the development of this application are:
 - Learn how to effectively user MySQL
 
 ## Instructions
-TBD I need to found out how the user will make this entire thing work
+TBD
 
 ## Final thoughts
 Wish me luck, this is a project I have been wanting to do for a while now :)
