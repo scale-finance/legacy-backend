@@ -1,11 +1,11 @@
 package models_test
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 
-	"github.com/elopez00/scale-backend/pkg/test"
 	"github.com/elopez00/scale-backend/cmd/api/models"
+	"github.com/elopez00/scale-backend/pkg/test"
 
 	"github.com/DATA-DOG/go-sqlmock"
 )
@@ -44,8 +44,8 @@ var testBudgetUpdate = models.Budget {
 // * Test Success
 
 func TestUpdateWhiteList(t *testing.T) {
-	app, mock := test.GetMockApp()
-	defer app.DB.Client.Close()
+	app := test.GetMockApp()
+	defer test.CloseDB(t, app)
 
 	query := 
 		`INSERT INTO whitelist\(id, category, name, itemId\) ` + 
@@ -63,7 +63,7 @@ func TestUpdateWhiteList(t *testing.T) {
 
 	whitelist := budget.Request.Update.WhiteList
 
-	mock.
+	app.DB.Mock.
 		ExpectPrepare(query).
 		ExpectExec().
 		WithArgs(
@@ -75,12 +75,12 @@ func TestUpdateWhiteList(t *testing.T) {
 
 	err := budget.Update(app, user.Id)
 	test.ModelMethod(t, err, "insert")
-	test.MockExpectations(t, mock)
+	test.MockExpectations(t, app)
 }
 
 func TestUpdateCategory(t *testing.T) {
-	app, mock := test.GetMockApp() 
-	defer app.DB.Client.Close()
+	app := test.GetMockApp()
+	defer test.CloseDB(t, app)
 	
 	query := 
 		`INSERT INTO categories\(id, name, budget, categoryId, color\) ` +
@@ -98,7 +98,7 @@ func TestUpdateCategory(t *testing.T) {
 
 	categories := budget.Request.Update.Categories
 	
-	mock.
+	app.DB.Mock.
 		ExpectPrepare(query).
 		ExpectExec().
 		WithArgs(
@@ -109,12 +109,12 @@ func TestUpdateCategory(t *testing.T) {
 
 	err := budget.Update(app, user.Id)
 	test.ModelMethod(t, err, "insert")
-	test.MockExpectations(t, mock)
+	test.MockExpectations(t, app)
 }
 
 func TestUpdateBudget(t *testing.T) {
-	app, mock := test.GetMockApp()
-	defer app.DB.Client.Close()
+	app := test.GetMockApp()
+	defer test.CloseDB(t, app)
 
 	categories := testBudgetUpdate.Request.Update.Categories
 	whitelist := testBudgetUpdate.Request.Update.WhiteList
@@ -124,7 +124,7 @@ func TestUpdateBudget(t *testing.T) {
 		`VALUES \(\?,\?,\?,\?,\?\), \(\?,\?,\?,\?,\?\) AS updated ` +
 		`ON DUPLICATE KEY UPDATE ` +
 		`id\=updated\.id, name\=updated\.name, budget\=updated\.budget, categoryId\=updated\.categoryId, color\=updated\.color;`
-	mock.
+	app.DB.Mock.
 		ExpectPrepare(query2).
 		ExpectExec().
 		WithArgs(
@@ -138,7 +138,7 @@ func TestUpdateBudget(t *testing.T) {
 		`VALUES \(\?,\?,\?,\?\), \(\?,\?,\?,\?\), \(\?,\?,\?,\?\) AS updated ` +
 		`ON DUPLICATE KEY UPDATE ` +
 		`id\=updated\.id, category\=updated\.category, name\=updated\.name, itemId\=updated\.itemId;`
-	mock.
+	app.DB.Mock.
 		ExpectPrepare(query1).
 		ExpectExec().
 		WithArgs(
@@ -150,12 +150,12 @@ func TestUpdateBudget(t *testing.T) {
 
 	err := testBudgetUpdate.Update(app, user.Id)
 	test.ModelMethod(t, err, "insert")
-	test.MockExpectations(t, mock)
+	test.MockExpectations(t, app)
 }
 
 func TestDeleteCategoryAndListItems(t *testing.T) {
-	app, mock := test.GetMockApp()
-	defer app.DB.Client.Close()
+	app := test.GetMockApp()
+	defer test.CloseDB(t, app)
 
 	budget := models.Budget {
 		Request: models.UpdateRequest {  
@@ -177,7 +177,7 @@ func TestDeleteCategoryAndListItems(t *testing.T) {
 		`ON categories\.categoryId \= whitelist\.category ` +
 		`WHERE categories\.id \= \? AND categories\.categoryId IN \(\?\);`
 
-	mock.
+	app.DB.Mock.
 		ExpectPrepare(query).
 		ExpectExec().
 		WithArgs(user.Id, budget.Request.Remove.Categories[0].Id).
@@ -185,12 +185,12 @@ func TestDeleteCategoryAndListItems(t *testing.T) {
 	
 	err := models.Delete(app, user.Id, budget)
 	test.ModelMethod(t, err, "delete")
-	test.MockExpectations(t, mock)
+	test.MockExpectations(t, app)
 }
 
 func TestDeleteWhiteListItem(t *testing.T) {
-	app, mock := test.GetMockApp()
-	defer app.DB.Client.Close()
+	app := test.GetMockApp()
+	defer test.CloseDB(t, app)
 
 	budget := models.Budget {
 		Request: models.UpdateRequest {
@@ -204,7 +204,7 @@ func TestDeleteWhiteListItem(t *testing.T) {
 	}
 
 	query := `DELETE FROM whitelist WHERE whitelist\.id \= \? AND whitelist\.itemId IN \(\?,\?\);`
-	mock.
+	app.DB.Mock.
 		ExpectPrepare(query).
 		ExpectExec().
 		WithArgs(
@@ -216,12 +216,12 @@ func TestDeleteWhiteListItem(t *testing.T) {
 	
 	err := models.Delete(app, user.Id, budget)
 	test.ModelMethod(t, err, "delete")
-	test.MockExpectations(t, mock)
+	test.MockExpectations(t, app)
 }
 
 func TestDeleteWhiteListAndCategories(t *testing.T) {
-	app, mock := test.GetMockApp()
-	defer app.DB.Client.Close()
+	app := test.GetMockApp()
+	defer test.CloseDB(t, app)
 
 	budget := models.Budget {
 		Request: models.UpdateRequest {
@@ -243,14 +243,14 @@ func TestDeleteWhiteListAndCategories(t *testing.T) {
 		`FROM categories LEFT JOIN whitelist ` +
 		`ON categories\.categoryId \= whitelist\.category ` +
 		`WHERE categories\.id \= \? AND categories\.categoryId IN \(\?\);`
-	mock.
+	app.DB.Mock.
 		ExpectPrepare(query1).
 		ExpectExec().
 		WithArgs(user.Id, budget.Request.Remove.Categories[0].Id).
 		WillReturnResult(sqlmock.NewResult(0, 3))
 	
 	query2 := `DELETE FROM whitelist WHERE whitelist\.id \= \? AND whitelist\.itemId IN \(\?\);`
-	mock.
+	app.DB.Mock.
 		ExpectPrepare(query2).
 		ExpectExec().
 		WithArgs(user.Id, budget.Request.Remove.WhiteList[2].Id).
@@ -258,12 +258,12 @@ func TestDeleteWhiteListAndCategories(t *testing.T) {
 
 	err := models.Delete(app, user.Id, budget)
 	test.ModelMethod(t, err, "delete")
-	test.MockExpectations(t, mock)
+	test.MockExpectations(t, app)
 }
 
 func TestGetBudget(t *testing.T) {
-	app, mock := test.GetMockApp()
-	defer app.DB.Client.Close()
+	app := test.GetMockApp()
+	defer test.CloseDB(t, app)
 
 	categories := testBudget.Categories
 	whitelist := []models.WhiteListItem { 
@@ -277,7 +277,7 @@ func TestGetBudget(t *testing.T) {
 		AddRow(user.Id, categories[1].Name, categories[1].Budget, categories[1].Id)
 
 	query1 := fmt.Sprintf("SELECT id, name, budget, categoryId FROM categories WHERE categories.id \\= %q", user.Id)
-	mock.
+	app.DB.Mock.
 		ExpectQuery(query1).
 		WillReturnRows(rows1)
 	
@@ -287,13 +287,13 @@ func TestGetBudget(t *testing.T) {
 		AddRow(user.Id, whitelist[2].Name, whitelist[2].Category, whitelist[2].Id)
 
 	query2 := fmt.Sprintf("SELECT id, name, category, itemId FROM whitelist WHERE whitelist.id \\= %q", user.Id)
-	mock.
+	app.DB.Mock.
 		ExpectQuery(query2).
 		WillReturnRows(rows2)
 		
 	budget, err := models.GetBudget(app, user.Id)
 	test.ModelMethod(t, err, "select")
-	test.MockExpectations(t, mock)
+	test.MockExpectations(t, app)
 
 	if len(budget.Categories) == 0 {
 		t.Fatal("This function was executed successfully, however, it did not return expected budget")
@@ -307,15 +307,15 @@ func TestGetBudget(t *testing.T) {
 // * Test Failure
 
 func TestUpdateFailure(t *testing.T) {
-	app, mock := test.GetMockApp()
-	app.DB.Client.Close()
+	app := test.GetMockApp()
+	defer test.CloseDBWhenFail(t, app)
 
 	query2 := 
 		`INSERT INTO categories\(id, name, budget, categoryId, color\) ` +
 		`VALUES \(\?,\?,\?,\?,\?\), \(\?,\?,\?,\?,\?\) AS updated ` +
 		`ON DUPLICATE KEY UPDATE ` +
 		`id\=updated\.id, name\=updated\.name, budget\=updated\.budget, categoryId\=updated\.categoryId, color\=updated\.color;`
-	mock.
+	app.DB.Mock.
 		ExpectPrepare(query2).
 		ExpectExec().
 		WillReturnResult(sqlmock.NewResult(0, 0))
@@ -325,18 +325,22 @@ func TestUpdateFailure(t *testing.T) {
 		`VALUES \(\?,\?,\?,\?\), \(\?,\?,\?,\?\), \(\?,\?,\?,\?\) AS updated ` +
 		`ON DUPLICATE KEY UPDATE ` +
 		`id\=updated\.id, category\=updated\.category, name\=updated\.name, itemId\=updated\.itemId;`
-	mock.
+	app.DB.Mock.
 		ExpectPrepare(query1).
 		ExpectExec().
 		WillReturnResult(sqlmock.NewResult(0, 0))
-	
-	testBudget.Update(app, user.Id)
-	test.MockFailure(t, mock)
+
+	err := testBudget.Update(app, user.Id)
+	if err != nil {
+		return
+	}
+
+	test.MockFailure(t, app)
 }
 
 func TestDeleteFailure(t *testing.T) {
-	app, mock := test.GetMockApp()
-	app.DB.Client.Close()
+	app := test.GetMockApp()
+	defer test.CloseDBWhenFail(t, app)
 
 	budget := models.Budget {
 		Request: models.UpdateRequest {  
@@ -346,7 +350,7 @@ func TestDeleteFailure(t *testing.T) {
 				},
 				WhiteList: []models.WhiteListItem {
 					{ "cid123", "Calvin Klein", "something" },
-					{ "cid123", "Ralph Lauren", "domething" },
+					{ "cid123", "Ralph Lauren", "nothing" },
 				},
 			},
 		},
@@ -358,19 +362,23 @@ func TestDeleteFailure(t *testing.T) {
 		`ON categories\.categoryId \= whitelist\.category ` +
 		`WHERE categories\.id \= \? AND categories\.categoryId IN \(\?\);`
 
-	mock.
+	app.DB.Mock.
 		ExpectPrepare(query).
 		ExpectExec().
-		WithArgs(user.Id, budget.Request.Remove.Categories[0].Id).
+		WithArgs("not the right id", budget.Request.Remove.Categories[0].Id).
 		WillReturnResult(sqlmock.NewResult(0, 3))
-	
-	models.Delete(app, user.Id, budget)
-	test.MockFailure(t, mock)
+
+	err := models.Delete(app, user.Id, budget)
+	if err != nil {
+		return
+	}
+
+	test.MockFailure(t, app)
 }
 
 func TestGetBudgetFailure(t *testing.T) {
-	app, mock := test.GetMockApp()
-	defer app.DB.Client.Close()
+	app := test.GetMockApp()
+	defer test.CloseDBWhenFail(t, app)
 
 	categories := testBudget.Categories
 	whitelist := []models.WhiteListItem { 
@@ -384,7 +392,7 @@ func TestGetBudgetFailure(t *testing.T) {
 		AddRow(user.Id, categories[1].Name, categories[1].Budget, categories[1].Id)
 
 	query1 := fmt.Sprintf("SELECT id, name, budget, categoryId FROM categories WHERE categories.id \\= %q", user.Id)
-	mock.
+	app.DB.Mock.
 		ExpectQuery(query1).
 		WillReturnRows(rows1)
 	
@@ -394,11 +402,11 @@ func TestGetBudgetFailure(t *testing.T) {
 		AddRow(user.Id, whitelist[2].Name, whitelist[2].Category, whitelist[2].Id)
 
 	query2 := fmt.Sprintf("SELECT id, name, category, itemId FROM whitelist WHERE whitelist.id \\= %q", user.Id)
-	mock.
+	app.DB.Mock.
 		ExpectQuery(query2).
 		WillReturnRows(rows2)
 		
 	_, err := models.GetBudget(app, "sup")
 	test.ModelMethodFailure(t, err)
-	test.MockFailure(t, mock)
+	test.MockFailure(t, app)
 }

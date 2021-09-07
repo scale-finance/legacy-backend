@@ -3,9 +3,9 @@ package sdk_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"testing"
-	"fmt"
 
 	"github.com/elopez00/scale-backend/cmd/api/middleware"
 	"github.com/elopez00/scale-backend/cmd/api/models"
@@ -16,8 +16,8 @@ import (
 )
 
 func TestCreateBudget(t *testing.T) {
-	app, mock := test.GetMockApp()
-	defer app.DB.Client.Close()
+	app := test.GetMockApp()
+	defer test.CloseDB(t, app)
 
 	jsonObject, _ := json.Marshal(budget)
 
@@ -27,7 +27,7 @@ func TestCreateBudget(t *testing.T) {
 			`VALUES \(\?,\?,\?,\?,\?\), \(\?,\?,\?,\?,\?\), \(\?,\?,\?,\?,\?\) ` +
 			`AS updated ON DUPLICATE KEY UPDATE ` +
 			`id\=updated\.id, name\=updated\.name, budget\=updated\.budget, categoryId\=updated\.categoryId, color\=updated\.color;`
-	mock.
+	app.DB.Mock.
 		ExpectPrepare(query1).
 		ExpectExec().
 		WillReturnResult(sqlmock.NewResult(0, 0))
@@ -38,7 +38,7 @@ func TestCreateBudget(t *testing.T) {
 			`VALUES \(\?,\?,\?,\?\), \(\?,\?,\?,\?\), \(\?,\?,\?,\?\), \(\?,\?,\?,\?\), \(\?,\?,\?,\?\), \(\?,\?,\?,\?\) ` +
 			`AS updated ON DUPLICATE KEY UPDATE ` +
 			`id\=updated\.id, category\=updated\.category, name\=updated\.name, itemId\=updated\.itemId;`
-	mock.
+	app.DB.Mock.
 		ExpectPrepare(query2).
 		ExpectExec().
 		WillReturnResult(sqlmock.NewResult(0, 0))
@@ -52,12 +52,12 @@ func TestCreateBudget(t *testing.T) {
 	)
 
 	test.Response(t, res, http.StatusOK)
-	test.MockExpectations(t, mock)
+	test.MockExpectations(t, app)
 }
 
 func TestGetBudget(t *testing.T) {
-	app, mock := test.GetMockApp()
-	defer app.DB.Client.Close() 
+	app := test.GetMockApp()
+	defer test.CloseDB(t, app)
 
 	categories := budget.Categories
 	whitelist := []models.WhiteListItem {
@@ -75,7 +75,7 @@ func TestGetBudget(t *testing.T) {
 		AddRow(user.Id, categories[2].Name, categories[2].Budget, categories[2].Id)
 
 	query1 := fmt.Sprintf("SELECT id, name, budget, categoryId FROM categories WHERE categories.id \\= %q", user.Id)
-	mock.
+	app.DB.Mock.
 		ExpectQuery(query1).
 		WillReturnRows(rows1)
 	
@@ -88,16 +88,16 @@ func TestGetBudget(t *testing.T) {
 		AddRow(user.Id, whitelist[5].Name, whitelist[5].Category, whitelist[5].Id)
 
 	query2 := fmt.Sprintf("SELECT id, name, category, itemId FROM whitelist WHERE whitelist.id \\= %q", user.Id)
-	mock.
+	app.DB.Mock.
 		ExpectQuery(query2).
 		WillReturnRows(rows2)
 	
 	b, err := models.GetBudget(app, user.Id)
 	test.ModelMethod(t, err, "select")
-	test.MockExpectations(t, mock)
+	test.MockExpectations(t, app)
 
-	if (b.Categories[0].Id != budget.Categories[0].Id && 
-		b.Categories[0].WhiteList[0].Id != budget.Categories[0].WhiteList[0].Id) {
+	if b.Categories[0].Id != budget.Categories[0].Id &&
+			b.Categories[0].WhiteList[0].Id != budget.Categories[0].WhiteList[0].Id {
 		t.Error("The function successfully executed but there was an error getting the correct budget")
 	}
 }

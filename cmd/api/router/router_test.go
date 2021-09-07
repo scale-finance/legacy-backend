@@ -8,7 +8,7 @@ import (
 )
 
 func TestRouterGet(t *testing.T) {
-	app, _ := test.GetMockApp()
+	app := test.GetMockApp()
 	if router.Get(app) == nil {
 		t.Error("Router did not return a valid httprouter handle")
 	}

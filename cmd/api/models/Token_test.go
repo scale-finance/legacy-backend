@@ -16,11 +16,11 @@ var token = models.Token{
 }
 
 func TestTokenAdd(t *testing.T) {
-	app, mock := test.GetMockApp()
-	defer app.DB.Client.Close()
+	app := test.GetMockApp()
+	defer test.CloseDB(t, app)
 
 	query := `INSERT INTO plaidtokens\(id, token, itemID, institution\) VALUES\(\?,\?,\?,\?\)`
-	mock.
+	app.DB.Mock.
 		ExpectPrepare(query).
 		ExpectExec().
 		WithArgs(user.Id, token.Value, token.Id, token.Institution).
@@ -28,23 +28,23 @@ func TestTokenAdd(t *testing.T) {
 
 	err := token.Add(app, user.Id)
 	test.ModelMethod(t, err, "insert")
-	test.MockExpectations(t, mock)
+	test.MockExpectations(t, app)
 }
 
 func TestGetTokens(t *testing.T) {
-	app, mock := test.GetMockApp()
-	defer app.DB.Client.Close()
+	app := test.GetMockApp()
+	defer test.CloseDB(t, app)
 
 	rows := sqlmock.NewRows([]string{"id", "token", "itemID", "institution"}).
 		AddRow(user.Id, "token1", "id1", "institution1").
 		AddRow(user.Id, "token2", "id2", "institution2")
 
 	query := `SELECT id, token, itemID, institution FROM plaidtokens WHERE id\="goingdowntosouthpark"`
-	mock.ExpectQuery(query).WillReturnRows(rows)
+	app.DB.Mock.ExpectQuery(query).WillReturnRows(rows)
 
 	tokens, err := models.GetTokens(app, user.Id)
 	test.ModelMethod(t, err, "select")
-	test.MockExpectations(t, mock)
+	test.MockExpectations(t, app)
 
 	if len(tokens) == 0 {
 		t.Error("The function did not return the tokens")

@@ -18,29 +18,29 @@ var user = models.User{
 }
 
 func TestUserCreate(t *testing.T) {
-	app, mock := test.GetMockApp()
-	defer app.DB.Client.Close()
+	app := test.GetMockApp()
+	defer test.CloseDB(t, app)
 
 	query := "INSERT INTO userinfo\\(id, firstname, lastname, email, password\\) VALUES\\(\\?,\\?,\\?,\\?,\\?\\)"
-	mock.ExpectPrepare(query).
+	app.DB.Mock.ExpectPrepare(query).
 		ExpectExec().
 		WithArgs(user.Id, user.FirstName, user.LastName, user.Email, user.Password).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
 	err := user.Create(app)
 	test.ModelMethod(t, err, "insert")
-	test.MockExpectations(t, mock)
+	test.MockExpectations(t, app)
 }
 
 func TestUserDoesExists(t *testing.T) {
-	app, mock := test.GetMockApp()
-	defer app.DB.Client.Close()
+	app := test.GetMockApp()
+	defer test.CloseDB(t, app)
 
 	rows := sqlmock.NewRows([]string{"id", "email"}).
 		AddRow(user.Id, user.Email)
 
 	query := `SELECT firstname, email FROM userinfo WHERE email\="smarsh@southpark\.com"`
-	mock.ExpectQuery(query).WillReturnRows(rows)
+	app.DB.Mock.ExpectQuery(query).WillReturnRows(rows)
 
 	exists := user.Exists(app)
 	if !exists {
@@ -48,15 +48,15 @@ func TestUserDoesExists(t *testing.T) {
 		return
 	}
 
-	test.MockExpectations(t, mock)
+	test.MockExpectations(t, app)
 }
 
 func TestUserDoesNotExist(t *testing.T) {
-	app, mock := test.GetMockApp()
-	defer app.DB.Client.Close()
+	app := test.GetMockApp()
+	defer test.CloseDB(t, app)
 
 	query := `SELECT firstname, email FROM userinfo WHERE email\="smarsh@southpark\.com"`
-	mock.ExpectQuery(query)
+	app.DB.Mock.ExpectQuery(query)
 
 	exists := user.Exists(app)
 	if exists {
@@ -64,18 +64,18 @@ func TestUserDoesNotExist(t *testing.T) {
 		return
 	}
 
-	test.MockExpectations(t, mock)
+	test.MockExpectations(t, app)
 }
 
 func TestGetCredential(t *testing.T) {
-	app, mock := test.GetMockApp()
-	defer app.DB.Client.Close()
+	app := test.GetMockApp()
+	defer test.CloseDB(t, app)
 
 	rows := sqlmock.NewRows([]string{"email", "password", "id"}).
 		AddRow(user.Email, user.Password, user.Id)
 
 	query := `SELECT email, password, id FROM userinfo WHERE email\="smarsh@southpark\.com"`
-	mock.ExpectQuery(query).WillReturnRows(rows)
+	app.DB.Mock.ExpectQuery(query).WillReturnRows(rows)
 
 	var actualUser models.User
 	err := user.GetCredentials(app, &actualUser)
@@ -87,11 +87,11 @@ func TestGetCredential(t *testing.T) {
 }
 
 func TestUnsuccessfulGetCredential(t *testing.T) {
-	app, mock := test.GetMockApp()
-	defer app.DB.Client.Close()
+	app := test.GetMockApp()
+	defer test.CloseDB(t, app)
 
 	query := `SELECT email, password, id FROM userinfo WHERE email\="smarsh@southpark\.com"`
-	mock.ExpectQuery(query)
+	app.DB.Mock.ExpectQuery(query)
 
 	var actualUser models.User
 	if err := user.GetCredentials(app, &actualUser); err == nil {

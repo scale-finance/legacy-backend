@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 	"sync"
+	"time"
 
 	"github.com/elopez00/scale-backend/cmd/api/models"
 	"github.com/elopez00/scale-backend/pkg/application"
@@ -125,6 +125,7 @@ func GetTransactions(app *application.App) httprouter.Handle {
 				res, err := app.Plaid.Client.GetTransactions(token.Value, startDate, endDate)
 				if err != nil {
 					msg := "Failed to retrieve tokens from Plaid client"
+					log.Println(token.Value)
 					models.CreateError(w, http.StatusBadGateway, msg, err)
 					return
 				}
@@ -142,7 +143,7 @@ func GetTransactions(app *application.App) httprouter.Handle {
 	}
 }
 
-// This function will return a JSON response with a struct containing all relevant information
+// GetBalance will return a JSON response with a struct containing all relevant information
 // about the balances in all bank accounts related to the user. If there is an error with the
 // internet connection or database it will be reflected as an error response as well as a log
 // to the server console

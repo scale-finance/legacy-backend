@@ -8,10 +8,10 @@ import (
 
 	"github.com/elopez00/scale-backend/cmd/api/models"
 	"github.com/elopez00/scale-backend/pkg/application"
-	
+
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
-	jwt "github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -159,10 +159,10 @@ func AuthCheck() httprouter.Handle {
 	}
 }
 
-// This function generates a JWT token based on the user id stored in the database that expires in
+// GenerateJWT generates a JWT token based on the user id stored in the database that expires in
 // 24 hours. If this function were to fail, its error would be returned respectfully.
 func GenerateJWT(app *application.App, id string) (string, error) {
-	key := app.Config.GetKey()
+	key := app.Config.GetServer()["key"]
 
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
 		Issuer:    id,
@@ -179,14 +179,14 @@ func GenerateJWT(app *application.App, id string) (string, error) {
 
 // * Static functions
 
-// encrypts password with all appropriate settings and conversions for simple use in the
+// EncryptPassword encrypts password with all appropriate settings and conversions for simple use in the
 // main authentication file
 func EncryptPassword(password string) string {
 	encrypted, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(encrypted)
 }
 
-// The purpose of this function is to simplify the code in the authentication file. It works
+// HashMatch purpose of this function is to simplify the code in the authentication file. It works
 // the same as bcrypt's library function, but with preset settings already integrated in the
 // function call itself.
 func HashMatch(password, hash string) bool {

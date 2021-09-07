@@ -6,14 +6,14 @@ import (
 	"github.com/elopez00/scale-backend/pkg/application"
 )
 
-// item for white listed companies of a specific category
+// WhiteListItem item for white listed companies of a specific category
 type WhiteListItem struct {
 	Category string `json:"category"` // id of category
 	Name     string `json:"name"`     // name of company being listed under this category
 	Id       string `json:"id"`       // item id
 }
 
-// category within budget
+// Category within budget
 type Category struct {
 	Name      string          `json:"name"`                // name of category
 	Budget    float64         `json:"budget"`              // amount of money budgeted towards this category
@@ -22,26 +22,26 @@ type Category struct {
 	Color 	  string		  `json:"color"`
 }
 
-// Object containing both category updates and whitelist updates. Neither one or the
+// UpdateObject contains both category updates and whitelist updates. Neither one nor the
 // other are required.
 type UpdateObject struct {
 	Categories []Category      `json:"categories,omitempty"`
 	WhiteList  []WhiteListItem `json:"whitelist,omitempty"`
 }
 
-// a struct that describes what will be updated in a budget
+// UpdateRequest a struct that describes what will be updated in a budget
 type UpdateRequest struct {
 	Update UpdateObject `json:"change,omitempty"`
 	Remove UpdateObject `json:"remove,omitempty"`
 }
 
-// A budget is a combination of categories
+// Budget is a combination of categories
 type Budget struct {
 	Categories []Category    `json:"categories,omitempty"`
 	Request    UpdateRequest `json:"request,omitempty"`
 }
 
-// This function will get the budget of the user from the database given
+// GetBudget will get the budget of the user from the database given
 // the user id and will return it as a Budget model. If the execution of
 // this function fails at any given point, it will return the error.
 func GetBudget(app *application.App, userId string) (Budget, error) {
@@ -89,7 +89,7 @@ func GetBudget(app *application.App, userId string) (Budget, error) {
 	return budget, nil
 }
 
-// Single function that handles all updates to current budget whether it be adding, removing,
+// Update handles all updates to current budget whether it be adding, removing,
 // or changing. This function will only perform at most 4 queries at a time. If there is a
 // failure inserting, deleting, or updating any of the rows it will be returned as an error.
 func (b *Budget) Update(app *application.App, userId string) error {
@@ -111,8 +111,8 @@ func (b *Budget) Update(app *application.App, userId string) error {
 	return nil
 }
 
-// Gets all the white list items and inserts them to the database. If the function fails
-// due to the databse connection or query execution, an error will be returned that reflects
+// UpdateWhiteList all the white list items and inserts them to the database. If the function fails
+// due to the database connection or query execution, an error will be returned that reflects
 // this
 func UpdateWhiteList(app *application.App, userId string, whitelist []WhiteListItem) error {
 	// there might not be items that needs to be whitelisted, if this is the case return nil
@@ -125,7 +125,7 @@ func UpdateWhiteList(app *application.App, userId string, whitelist []WhiteListI
 		" AS updated ON DUPLICATE KEY UPDATE id=updated.id, category=updated.category," +
 			" name=updated.name, itemId=updated.itemId;"
 
-	vals := []interface{}{}
+	var vals []interface{}
 
 	for _, item := range whitelist {
 		query += " (?,?,?,?),"
@@ -147,7 +147,7 @@ func UpdateWhiteList(app *application.App, userId string, whitelist []WhiteListI
 	return nil
 }
 
-// Gets all the category items and inserts them to the database. If the function fails due
+// UpdateCategories all the category items and inserts them to the database. If the function fails due
 // to the databse connection or query execution, an error will be returned that reflects this
 func UpdateCategories(app *application.App, userId string, categories []Category) error {
 	if len(categories) == 0 {
@@ -159,7 +159,7 @@ func UpdateCategories(app *application.App, userId string, categories []Category
 		" AS updated ON DUPLICATE KEY UPDATE id=updated.id, name=updated.name," +
 			" budget=updated.budget, categoryId=updated.categoryId, color=updated.color;"
 
-	vals := []interface{}{}
+	var vals []interface{}
 
 	for _, category := range categories {
 		query += " (?,?,?,?,?),"
@@ -181,7 +181,7 @@ func UpdateCategories(app *application.App, userId string, categories []Category
 	return nil
 }
 
-// Deletes rows according to the request. If a category is deleted, and whitelist items
+// Delete will delete rows according to the request. If a category is deleted, and whitelist items
 // in that category are also marked for deletion, they will be ignored and all of the
 // rows will be deleted in a single query. This function will at most perform 2 queries.
 // If there is an error with the execution, it will be reflectedi in the return value.

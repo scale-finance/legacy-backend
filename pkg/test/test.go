@@ -6,42 +6,62 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"log"
 	"time"
 
 	"github.com/elopez00/scale-backend/cmd/api/models"
 	"github.com/elopez00/scale-backend/cmd/api/sdk"
 	"github.com/elopez00/scale-backend/pkg/application"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/joho/godotenv"
 	"github.com/julienschmidt/httprouter"
 )
 
-// This will get a mock application with no live secrets or codes so that the database,
+// GetMockApp will get a mock application with no live secrets or codes so that the database,
 // and general API functions can be tested. It will return a test application and a mock
 // database to test queries.
-func GetMockApp() (*application.App, sqlmock.Sqlmock) {
-	db, mock, _ := sqlmock.New()
-
-	app := application.GetTest(db)
-
-	return app, mock
-}
-
-// This will get a mock application that gets the sandbox keys for plaid. Everything else
-// will be returned just as if GetMockApp() were called.
-func GetPlaidMockApp() (*application.App, sqlmock.Sqlmock) {
-	if err := godotenv.Load("../../../.env"); err != nil {
-		panic(err.Error())
+func GetMockApp() *application.App {
+	environment := map[string]string {
+		"DB_ACCESSPT": "test",
+		"PLAID_CLIENT": "test",
 	}
-	db, mock, _ := sqlmock.New()
 
-	app := application.GetTest(db)
-	return app, mock
+	app, _ := application.Get(environment)
+
+	return app
 }
 
-// This function is used to test post calls with JSON bodies
+// GetPlaidMockApp will get a mock application that gets the sandbox keys for plaid. Everything else
+// will be returned just as if GetMockApp() were called.
+func GetPlaidMockApp() *application.App {
+	environment, err := godotenv.Read("../../../.env")
+	environment["DB_ACCESSPT"] = "test"
+	if err != nil {
+		panic(err)
+	}
+
+	app, _  := application.Get(environment)
+	return app
+}
+
+// CloseDB will close the database instance in a testing environment
+func CloseDB (t *testing.T, app *application.App) {
+	app.DB.Mock.ExpectClose()
+	notSupposedToHappen := "all expectations were already fulfilled, call to database Close was not expected"
+	err := app.DB.Client.Close()
+	if err != nil && err.Error() != notSupposedToHappen {
+		t.Fatal("Failed to close database:", err)
+	}
+}
+
+// CloseDBWhenFail will close database when there are no expectations for success
+func CloseDBWhenFail(t *testing.T, app *application.App) {
+	err := app.DB.Client.Close()
+	if err != nil {
+		//t.Fatal("Error closing database")
+	}
+}
+
+// Post is used to test post calls with JSON bodies
 func Post(endpoint string, handler httprouter.Handle, body io.Reader) *httptest.ResponseRecorder {
 	req, _ := http.NewRequest("POST", endpoint, body)
 
@@ -53,7 +73,7 @@ func Post(endpoint string, handler httprouter.Handle, body io.Reader) *httptest.
 	return res
 }
 
-// This function is used to test get requests without json bodies
+// Get is used to test get requests without json bodies
 func Get(endpoint string, handler httprouter.Handle) *httptest.ResponseRecorder {
 	req, _ := http.NewRequest("GET", endpoint, nil)
 
@@ -65,7 +85,7 @@ func Get(endpoint string, handler httprouter.Handle) *httptest.ResponseRecorder 
 	return res
 }
 
-// this function is used to test any get request that requires a specific type of cookie. The name
+// GetWithCookie is used to test any get request that requires a specific type of cookie. The name
 // parameter in this function will be used to specify what cookie the request will search for and
 // it will always return a cookie with "testvalue" as its value. Since it is a GET request, this
 // function does not take JSON bodies
@@ -85,7 +105,7 @@ func GetWithCookie(endpoint string, handler httprouter.Handle, app *application.
 	return res
 }
 
-// This function is used to test any post request that requires a specific type of cookie. The name
+// PostWithCookie is used to test any post request that requires a specific type of cookie. The name
 // parameter in this function will be used to specify what cookie the request will search for and
 // it will always return a cookie with "testvalue" as its value. Since it is a POST request, this
 // function will take in a JSON body
@@ -105,28 +125,28 @@ func PostWithCookie(endpoint string, handler httprouter.Handle, body io.Reader, 
 	return res
 }
 
-// Function that will take in the testing object and the mock
+// MockExpectations will take in the testing object and the mock
 // used for database testing and return a testing error if the
 // expectations were not met for the given mock.
-func MockExpectations(t *testing.T, mock sqlmock.Sqlmock) {
-	if err := mock.ExpectationsWereMet(); err != nil {
+func MockExpectations(t *testing.T, app *application.App) {
+	if err := app.DB.Mock.ExpectationsWereMet(); err != nil {
 		t.Fatal("There were unfulfilled expectations:", err)
 		return
 	}
 }
 
-// Function that will take in the testing object and the mock
+// MockFailure will take in the testing object and the mock
 // used for database testing and return a testing error if the
 // expectations were met given the mock. Used for testing
 // failure
-func MockFailure(t *testing.T, mock sqlmock.Sqlmock) {
-	if err := mock.ExpectationsWereMet(); err == nil {
+func MockFailure(t *testing.T, app *application.App) {
+	if err := app.DB.Mock.ExpectationsWereMet(); err == nil {
 		t.Fatal("This function should not have successfully executed")
 		return
 	}
 }
 
-// Will take in a testing object, a response recorder, and an expected status code.
+// Response will take in a testing object, a response recorder, and an expected status code.
 // If the code from the response does not match the code from the expected parameter,
 // then this function will return a testing error with the response message, and a
 // comparison of the response codes.
@@ -140,7 +160,7 @@ func Response(t *testing.T, res *httptest.ResponseRecorder, expected int) {
 	}
 }
 
-// Given a method, an error, and a testing object, this function
+// ModelMethod given a method, an error, and a testing object, this function
 // will determine if the error is not nil and then return a
 // testing error with a description that will correspond to the
 // described method in the parameter
@@ -160,7 +180,7 @@ func ModelMethod(t *testing.T, err error, method string) {
 	}
 }
 
-// Given an error and a testing object, this function will determine
+// ModelMethodFailure Given an error and a testing object, this function will determine
 // if there is an error in the execution of the model's method and
 // will return a testing error if the function successfully
 // executes. This is for testing method failure.
@@ -176,9 +196,4 @@ func executeRequest(req *http.Request, handler *httprouter.Router) *httptest.Res
 	handler.ServeHTTP(rr, req)
 
 	return rr
-}
-
-func Time(start time.Time, name string) {
-    elapsed := time.Since(start)
-    log.Printf("%s took %s", name, elapsed)
 }

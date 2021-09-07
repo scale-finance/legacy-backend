@@ -35,9 +35,9 @@ func Authenticate(next httprouter.Handle, app *application.App) httprouter.Handl
 	}
 }
 
-// tests to see if cookie is still valid
+// CookieIsValid tests to see if cookie is still valid
 func CookieIsValid(r *http.Request, app *application.App, name string) (string, error) {
-	key := app.Config.GetKey()
+	key := app.Config.GetServer()["key"]
 	cookie, err := r.Cookie(name)
 	if err != nil {
 		return "", err
