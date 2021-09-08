@@ -3,6 +3,7 @@ package sdk
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/elopez00/scale-backend/cmd/api/models"
@@ -16,11 +17,15 @@ import (
 // with a query or database connection it will be logged and returned as a JSON response.
 func UpdateBudget(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		defer r.Body.Close()
+		defer CloseBody(r)
 
 		// extract the budget information from the request body
 		var budget models.Budget
-		json.NewDecoder(r.Body).Decode(&budget)
+		err := json.NewDecoder(r.Body).Decode(&budget)
+		if err != nil {
+			log.Println("Failed to decode budget from body")
+			return
+		}
 
 		// gets the user id extracted from authentication cookie for later
 		// use in the creation of the row containing the permanent token

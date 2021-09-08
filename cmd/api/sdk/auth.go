@@ -9,18 +9,18 @@ import (
 	"github.com/elopez00/scale-backend/cmd/api/models"
 	"github.com/elopez00/scale-backend/pkg/application"
 
-	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// onboard user to DB given application sequence. This function is in charge of creating
+// Onboard user to DB given application sequence. This function is in charge of creating
 // a new user in the database (given one does not already exist with the same credentials)
 // and will give each user a unique ID and a hashed password for further authentication
 func Onboard(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		defer r.Body.Close()
+		defer CloseBody(r)
 		
 		// get user input from body
 		var user models.User
@@ -36,7 +36,7 @@ func Onboard(app *application.App) httprouter.Handle {
 		}
 
 		// finish gather important user data
-		user.Password = EncryptPassword(user.Password)
+		user.Password = encryptPassword(user.Password)
 		if len(user.Id) == 0 {
 			user.Id = uuid.New().String()
 		}
@@ -57,18 +57,18 @@ func Onboard(app *application.App) httprouter.Handle {
 			return
 		}
 
-		// return successful onboarding message
-		msg := "User successfully onboared"
+		// return successful boarding message
+		msg := "User successfully onboard"
 		models.CreateResponse(w, msg, nil)
 	}
 }
 
-// logs in user by doing a preliminary check to backend to check if the user exists. After
-// verification, the function will compare hashed and input password so it can then focus
+// Login logs in user by doing a preliminary check to backend to check if the user exists. After
+// verification, the function will compare hashed and input password, so it can then focus
 // on creating a jwt token
 func Login(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		defer r.Body.Close()
+		defer CloseBody(r)
 
 		// grabs input user from body
 		var authUser models.User
@@ -88,7 +88,7 @@ func Login(app *application.App) httprouter.Handle {
 		}
 
 		// check to see if passwords match
-		if match := HashMatch(authUser.Password, actualUser.Password); !match {
+		if match := hashMatch(authUser.Password, actualUser.Password); !match {
 			msg := "Password incorrect"
 			models.CreateError(w, http.StatusUnauthorized, msg, nil)
 			return
@@ -108,22 +108,22 @@ func Login(app *application.App) httprouter.Handle {
 	}
 }
 
-// This function logs the user out of their session by deleting the AuthToken cookie containing
-// the user user's JWT. The function should return an error status if there is no token to delete
-func Logout(app *application.App) httprouter.Handle {
+// Logout  logs the user out of their session by deleting the AuthToken cookie containing
+// the user's JWT. The function should return an error status if there is no token to delete
+func Logout() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		if len(r.Cookies()) < 1 {
 			msg := "User already signed out"
 			models.CreateError(w, http.StatusBadRequest, msg, nil)
 		} 
 		
-		DeleteCookie(w, app, "AuthToken")
+		DeleteCookie(w, "AuthToken")
 		msg := "User successfully signed out"
 		models.CreateResponse(w, msg, nil)
 	}
 }
 
-// Creates valid httponly cookie
+// CreateCookie makes a valid httponly cookie
 func CreateCookie(w http.ResponseWriter, app *application.App, name, id string) error {
 	token, err := GenerateJWT(app, id)
 	if err != nil {
@@ -141,8 +141,8 @@ func CreateCookie(w http.ResponseWriter, app *application.App, name, id string) 
 	return nil
 }
 
-// Deletes existing cookie
-func DeleteCookie(w http.ResponseWriter, app *application.App, name string) {
+// DeleteCookie removes existing cookie
+func DeleteCookie(w http.ResponseWriter, name string) {
 	cookie := http.Cookie{
 		Name:   name,
 		MaxAge: -1,
@@ -151,7 +151,7 @@ func DeleteCookie(w http.ResponseWriter, app *application.App, name string) {
 	http.SetCookie(w, &cookie)
 }
 
-// Function that tests authentication state
+// AuthCheck is a function that tests authentication state
 func AuthCheck() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		msg := "This app is authenticated"
@@ -179,17 +179,17 @@ func GenerateJWT(app *application.App, id string) (string, error) {
 
 // * Static functions
 
-// EncryptPassword encrypts password with all appropriate settings and conversions for simple use in the
+// encryptPassword encrypts password with all appropriate settings and conversions for simple use in the
 // main authentication file
-func EncryptPassword(password string) string {
+func encryptPassword(password string) string {
 	encrypted, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(encrypted)
 }
 
-// HashMatch purpose of this function is to simplify the code in the authentication file. It works
-// the same as bcrypt's library function, but with preset settings already integrated in the
+// hashMatch purpose of this function is to simplify the code in the authentication file. It works
+// the same as bcrypt library function, but with preset settings already integrated in the
 // function call itself.
-func HashMatch(password, hash string) bool {
+func hashMatch(password, hash string) bool {
 	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)); err != nil {
 		return false
 	} else {

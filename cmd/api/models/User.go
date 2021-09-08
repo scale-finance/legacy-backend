@@ -7,7 +7,7 @@ import (
 	"github.com/elopez00/scale-backend/pkg/application"
 )
 
-// The User struct will be used to get any information regarding the user information.
+// User struct will be used to get any information regarding the user information.
 // The id in this case scenario is a primary key and will be used to retrieve other tables
 // linked to the User.
 type User struct {
@@ -18,7 +18,7 @@ type User struct {
 	Password  string `json:"password,omitempty"`
 }
 
-// Method that creates user row based on current user. If there are any errors with the
+// Create Method that creates user row based on current user. If there are any errors with the
 // query, these issues will be returned
 func (u *User) Create(app *application.App) error {
 	query := "INSERT INTO userinfo(id, firstname, lastname, email, password) VALUES(?,?,?,?,?)"
@@ -35,8 +35,8 @@ func (u *User) Create(app *application.App) error {
 	return nil
 }
 
-// This method checks to see if current user exists in the database. Based on the
-// result of this query the function will return a boolean.
+// Exists This method checks to see if current user exists in the database.
+// Based on the result of this query the function will return a boolean.
 // ! This function automatically assumes that errors yield false
 func (u *User) Exists(app *application.App) bool {
 	var test User
@@ -50,7 +50,7 @@ func (u *User) Exists(app *application.App) bool {
 	}
 }
 
-// Method gives gets credentials found in database using current user's Email value.
+// GetCredentials Method gives gets credentials found in database using current user's Email value.
 // Any problem with the query or database connection will be reflected in returned error.
 func (u *User) GetCredentials(app *application.App, actualUser *User) error {
 	query := fmt.Sprintf("SELECT email, password, id FROM userinfo WHERE email=%q", u.Email)

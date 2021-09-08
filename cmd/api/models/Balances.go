@@ -4,7 +4,7 @@ import (
 	"github.com/plaid/plaid-go/plaid"
 )
 
-// define a struct for balance types
+// BType define a struct for balance types
 type BType struct {
 	Current     float64 `json:"current"`
 	Name        string  `json:"name"`
@@ -16,7 +16,7 @@ type BType struct {
 	PaymentDate string  `json:"paymentDate,omitempty"`
 }
 
-// define a struct for balance totals
+// BTotal define a struct for balance totals
 type BTotal struct {
 	Liquid float64 `json:"liquid"`
 	Credit float64 `json:"credit"`
@@ -24,7 +24,7 @@ type BTotal struct {
 	Total  float64 `json:"total"`
 }
 
-// define a struct for the balance response
+// Balance defines a struct for the balance response
 type Balance struct {
 	Liquid []BType `json:"liquid"`
 	Credit []BType `json:"credit"`
@@ -38,7 +38,7 @@ type PlaidLiabilities struct {
 	Mortgage []plaid.MortgageLiability    `json:"mortgage"`
 }
 
-// Given the institution, account, and liability, this function will add that balance to the
+// AddBalance Given the institution, account, and liability, this function will add that balance to the
 // balance object.
 func (b *Balance) AddBalance(institution string, account plaid.Account, liabilities *PlaidLiabilities) {
 	var (
@@ -63,8 +63,8 @@ func (b *Balance) AddBalance(institution string, account plaid.Account, liabilit
 	case "credit":
 		{
 			if len(liabilities.Credit) != 0 {
-				due = float64(liabilities.Credit[0].LastPaymentAmount)
-				date = string(liabilities.Credit[0].LastPaymentDate)
+				due = liabilities.Credit[0].LastPaymentAmount
+				date = liabilities.Credit[0].LastPaymentDate
 				
 				// push back liabilities
 				liabilities.Credit = liabilities.Credit[1:len(liabilities.Credit)]
@@ -88,8 +88,8 @@ func (b *Balance) AddBalance(institution string, account plaid.Account, liabilit
 		{
 			if account.Subtype == "student" {
 				if len(liabilities.Student) != 0 {
-					due = float64(liabilities.Student[0].LastPaymentAmount)
-					date = string(liabilities.Student[0].LastPaymentDate)
+					due = liabilities.Student[0].LastPaymentAmount
+					date = liabilities.Student[0].LastPaymentDate
 
 					// push back liabilities
 					liabilities.Student = liabilities.Student[1:len(liabilities.Student)]
@@ -110,8 +110,8 @@ func (b *Balance) AddBalance(institution string, account plaid.Account, liabilit
 				b.Net.Total -= account.Balances.Current
 			} else {
 				if len(liabilities.Mortgage) != 0 {
-					due = float64(liabilities.Mortgage[0].LastPaymentAmount)
-					date = string(liabilities.Mortgage[0].LastPaymentDate)
+					due = liabilities.Mortgage[0].LastPaymentAmount
+					date = liabilities.Mortgage[0].LastPaymentDate
 
 					// push back liabilities
 					liabilities.Mortgage = liabilities.Mortgage[1:len(liabilities.Mortgage)]

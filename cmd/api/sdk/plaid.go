@@ -15,7 +15,7 @@ import (
 	"github.com/plaid/plaid-go/plaid"
 )
 
-// Returns the plaid token from authentication token. If in any case there is an error with
+// GetPlaidToken returns the plaid token from authentication token. If in any case there is an error with
 // the link token or the user's connection, it will return a json response error to the frontend
 func GetPlaidToken(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -35,7 +35,7 @@ func GetPlaidToken(app *application.App) httprouter.Handle {
 
 		// calls on the app's plaid client and creates a link token with the configuration
 		// provided by the tokenConfig struct. If for whatever reason the client fails, it
-		// will return a json resposne reflecting this issue
+		// will return a json response reflecting this issue
 		tokenResponse, err := app.Plaid.Client.CreateLinkToken(tokenConfig)
 		if err != nil {
 			msg := "Failure to load client"
@@ -44,25 +44,31 @@ func GetPlaidToken(app *application.App) httprouter.Handle {
 		}
 
 		// when successful returns a result response
-		msg := "Successfully recieved link token from plaid"
+		msg := "Successfully received link token from plaid"
 		models.CreateResponse(w, msg, tokenResponse.LinkToken)
 	}
 }
 
-// this function takes care of creating the permanent access token that will be
-// stored in the database for cross-platform connection to users' bank. If for
-// whatever reason there is a problem with the client or public token, their
+// ExchangePublicToken this function takes care of creating the permanent access token
+// that will be stored in the database for cross-platform connection to users' bank.
+// If for whatever reason there is a problem with the client or public token, there
 // are json responses and logs that will adequately reflect all issues
 func ExchangePublicToken(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		var token models.Token
-		json.NewDecoder(r.Body).Decode(&token)
+		defer CloseBody(r)
 
-		// Creates the permanent token using the public token it gets from the frontend's
+		var token models.Token
+		err := json.NewDecoder(r.Body).Decode(&token)
+		if err != nil {
+			log.Println("Failed to decode token object from json")
+			return
+		}
+
+		// Creates the permanent token using the public token it gets from the frontend
 		// request body
 		res, err := app.Plaid.Client.ExchangePublicToken(token.Value)
 		if err != nil {
-			msg := "Failure to excahnge link token"
+			msg := "Failure to exchange link token"
 			models.CreateError(w, http.StatusBadGateway, msg, err)
 			return
 		}
@@ -88,9 +94,9 @@ func ExchangePublicToken(app *application.App) httprouter.Handle {
 	}
 }
 
-// This function will get transactions from the past 12 months from all bank accounts
-// affiliated with the user. If there is an error with the database retrieval or the
-// plaid client call, this will be reflected in the json response accordingly.
+// GetTransactions is a function will get transactions from the past 12 months from all
+// bank accounts affiliated with the user. If there is an error with the database retrieval
+// or the plaid client call, this will be reflected in the json response accordingly.
 func GetTransactions(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		// create the user with the id obtained from middleware context
@@ -108,7 +114,7 @@ func GetTransactions(app *application.App) httprouter.Handle {
 		startDate := time.Now().Add(-12 * 30 * 24 * time.Hour).Format(iso8601TimeFormat)
 		endDate := time.Now().Format(iso8601TimeFormat)
 
-		// intialize wait group 
+		// initialize wait group
 		var waitGroup sync.WaitGroup
 
 		// make transactions map that will be returned in result
@@ -178,7 +184,7 @@ func GetBalance(app *application.App) httprouter.Handle {
 				res, err := app.Plaid.Client.GetLiabilities(token.Value)
 
 				// if getting liabilities fails because the product is not supported, then try to get 
-				// the balances to at least have general info and it will log it to the server. If the 
+				// the balances to at least have general info, and it will log it to the server. If the
 				// liabilities call or the balances call fail for any other reason, it will return
 				// as json response
 				if err != nil && len(err.Error()) > 107 && err.Error()[85:107] == "PRODUCTS_NOT_SUPPORTED" {

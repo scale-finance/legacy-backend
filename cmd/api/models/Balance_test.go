@@ -162,6 +162,19 @@ var testAccount = plaid.GetLiabilitiesResponse {
 			Subtype: "mortgage",
 			Type: "loan",
 		},
+		{
+			AccountID: "dVzbVMLjrxTnLjX4G66XUp5GLklm4oiZy88yK",
+			Balances: plaid.AccountBalances {
+				Current: 410,
+				ISOCurrencyCode: "USD",
+				Limit: 2000,
+			},
+			Mask: "3333",
+			Name: "Plaid Debit Card",
+			OfficialName: "Plaid Diamond 12.5% APR Interest Credit Card",
+			Subtype: "debit card",
+			Type: "depository",
+		},
 	},
 }
 

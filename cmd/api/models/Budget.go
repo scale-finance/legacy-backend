@@ -1,8 +1,6 @@
 package models
 
 import (
-	"fmt"
-
 	"github.com/elopez00/scale-backend/pkg/application"
 )
 
@@ -49,15 +47,15 @@ func GetBudget(app *application.App, userId string) (Budget, error) {
 	catMap := make(map[string][]WhiteListItem) // map containing all whitelist items pertaining to a category
 
 	// get categories from database
-	queryCategories := fmt.Sprintf("SELECT id, name, budget, categoryId FROM categories WHERE categories.id = %q", userId)
-	categories, err := app.DB.Client.Query(queryCategories)
+	queryCategories := "SELECT id, name, budget, categoryId FROM categories WHERE categories.id = ?"
+	categories, err := app.DB.Client.Query(queryCategories, userId)
 	if err != nil {
 		return Budget{}, err
 	}
 
 	// get whitelist items from database
-	queryWhiteList := fmt.Sprintf("SELECT id, name, category, itemId FROM whitelist WHERE whitelist.id = %q", userId)
-	whitelist, err := app.DB.Client.Query(queryWhiteList)
+	queryWhiteList := "SELECT id, name, category, itemId FROM whitelist WHERE whitelist.id = ?"
+	whitelist, err := app.DB.Client.Query(queryWhiteList, userId)
 	if err != nil {
 		return Budget{}, err
 	}
@@ -125,11 +123,11 @@ func UpdateWhiteList(app *application.App, userId string, whitelist []WhiteListI
 		" AS updated ON DUPLICATE KEY UPDATE id=updated.id, category=updated.category," +
 			" name=updated.name, itemId=updated.itemId;"
 
-	var vals []interface{}
+	var values []interface{}
 
 	for _, item := range whitelist {
 		query += " (?,?,?,?),"
-		vals = append(vals, userId, item.Category, item.Name, item.Id)
+		values = append(values, userId, item.Category, item.Name, item.Id)
 	}
 
 	// prepare statement
@@ -140,7 +138,7 @@ func UpdateWhiteList(app *application.App, userId string, whitelist []WhiteListI
 	}
 
 	// execute query
-	if _, err := stmt.Exec(vals...); err != nil {
+	if _, err := stmt.Exec(values...); err != nil {
 		return err
 	}
 
@@ -148,7 +146,7 @@ func UpdateWhiteList(app *application.App, userId string, whitelist []WhiteListI
 }
 
 // UpdateCategories all the category items and inserts them to the database. If the function fails due
-// to the databse connection or query execution, an error will be returned that reflects this
+// to the database connection or query execution, an error will be returned that reflects this
 func UpdateCategories(app *application.App, userId string, categories []Category) error {
 	if len(categories) == 0 {
 		return nil
@@ -157,13 +155,13 @@ func UpdateCategories(app *application.App, userId string, categories []Category
 	query := "INSERT INTO categories(id, name, budget, categoryId, color) VALUES "
 	queryEnd :=
 		" AS updated ON DUPLICATE KEY UPDATE id=updated.id, name=updated.name," +
-			" budget=updated.budget, categoryId=updated.categoryId, color=updated.color;"
+		" budget=updated.budget, categoryId=updated.categoryId, color=updated.color;"
 
-	var vals []interface{}
+	var values []interface{}
 
 	for _, category := range categories {
 		query += " (?,?,?,?,?),"
-		vals = append(vals, userId, category.Name, category.Budget, category.Id, category.Color)
+		values = append(values, userId, category.Name, category.Budget, category.Id, category.Color)
 	}
 
 	// prepare statement
@@ -174,7 +172,7 @@ func UpdateCategories(app *application.App, userId string, categories []Category
 	}
 
 	// execute query
-	if _, err := stmt.Exec(vals...); err != nil {
+	if _, err := stmt.Exec(values...); err != nil {
 		return err
 	}
 
@@ -182,24 +180,24 @@ func UpdateCategories(app *application.App, userId string, categories []Category
 }
 
 // Delete will delete rows according to the request. If a category is deleted, and whitelist items
-// in that category are also marked for deletion, they will be ignored and all of the
+// in that category are also marked for deletion, they will be ignored and all the
 // rows will be deleted in a single query. This function will at most perform 2 queries.
-// If there is an error with the execution, it will be reflectedi in the return value.
+// If there is an error with the execution, it will be reflected in the return value.
 func Delete(app *application.App, userId string, b Budget) error {
 	deleted := make(map[string]bool) // create a map to keep track of deleted categories
 
 	if len(b.Request.Remove.Categories) != 0 {
-		vals := []interface{}{userId} // initialize vals with userid
+		values := []interface{}{userId} // initialize values with userid
 		query :=
 			"DELETE categories, whitelist " +
-				"FROM categories LEFT JOIN whitelist " +
-				"ON categories.categoryId = whitelist.category " +
-				"WHERE categories.id = ? AND categories.categoryId IN ("
+			"FROM categories LEFT JOIN whitelist " +
+			"ON categories.categoryId = whitelist.category " +
+			"WHERE categories.id = ? AND categories.categoryId IN ("
 
 		// loop through all categories
 		for _, category := range b.Request.Remove.Categories {
 			query += "?,"
-			vals = append(vals, category.Id)
+			values = append(values, category.Id)
 			deleted[category.Id] = true // adding category to deleted map
 		}
 
@@ -211,27 +209,27 @@ func Delete(app *application.App, userId string, b Budget) error {
 		}
 
 		// execute query
-		if _, err := stmt.Exec(vals...); err != nil {
+		if _, err := stmt.Exec(values...); err != nil {
 			return err
 		}
 	}
 
 	if len(b.Request.Remove.WhiteList) != 0 {
-		vals := []interface{}{userId}
+		values := []interface{}{userId}
 		query :=
 			"DELETE FROM whitelist " +
-				"WHERE whitelist.id = ? AND whitelist.itemId IN ("
+			"WHERE whitelist.id = ? AND whitelist.itemId IN ("
 
 		// loop through all items
 		for _, item := range b.Request.Remove.WhiteList {
 			// if the item is deleted we don't add it to the query
 			if !deleted[item.Category] {
 				query += "?,"
-				vals = append(vals, item.Id)
+				values = append(values, item.Id)
 			}
 		}
 
-		if len(vals) > 1 {
+		if len(values) > 1 {
 			// prepare query
 			query = query[0:len(query)-1] + ");"
 			stmt, err := app.DB.Client.Prepare(query)
@@ -240,7 +238,7 @@ func Delete(app *application.App, userId string, b Budget) error {
 			}
 
 			// execute query
-			if _, err := stmt.Exec(vals...); err != nil {
+			if _, err := stmt.Exec(values...); err != nil {
 				return err
 			}
 		}

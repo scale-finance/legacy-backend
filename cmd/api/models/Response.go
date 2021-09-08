@@ -28,7 +28,11 @@ func CreateResponse(w http.ResponseWriter, message string, result interface{}) {
 		Result:  result,
 	}
 
-	encoder.Encode(res)
+	err := encoder.Encode(res)
+	if err != nil {
+		log.Println("Failed to encode response")
+		return
+	}
 }
 
 // CreateError this function is used to create an error JSON response with custom http statuses.
@@ -50,7 +54,8 @@ func CreateError(w http.ResponseWriter, status int, message string, system error
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
 	if err := encoder.Encode(res); err != nil {
-		panic(err)
+		log.Println("failed to encode response")
+		return
 	}
 }
 
