@@ -1,7 +1,6 @@
 package models_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/elopez00/scale-backend/cmd/api/models"
@@ -13,7 +12,7 @@ import (
 var testBudget = models.Budget {
 	Categories: []models.Category{
 		{Name: "shopping", Budget: 200, Color: "red", WhiteList: []models.WhiteListItem{
-			{Category: "shopping", Name: "Calvin Klien"},
+			{Category: "shopping", Name: "Calvin Klein"},
 			{Category: "shopping", Name: "Best Buy"},
 			{Category: "shopping", Name: "Amazon"},
 		}},
@@ -30,12 +29,12 @@ var testBudgetUpdate = models.Budget {
 		Update: models.UpdateObject {
 			Categories: []models.Category { 
 				{ Name: "Shopping", Budget: 300, Id: "a;sldfkdj" },
-				{ Name: "Fast Food", Budget: 100, Id: "asldfkjs" },
+				{ Name: "Fast Food", Budget: 100, Id: "a;sldfkjs" },
 			},
 			WhiteList: []models.WhiteListItem {
 				{ Name: "Polo Store", Category: "Shopping", Id: ";lkj3lk" },
 				{ Name: "Five Guys", Category: "Fast Food", Id: ";lkj;fl" },
-				{ Name: "Chipotle", Category: "Fast Food", Id: "a;sdlf6k" },
+				{ Name: "Chipotle", Category: "Fast Food", Id: "a;sdl6k" },
 			},
 		},
 	},
@@ -276,7 +275,7 @@ func TestGetBudget(t *testing.T) {
 		AddRow(user.Id, categories[0].Name, categories[0].Budget, categories[0].Id).
 		AddRow(user.Id, categories[1].Name, categories[1].Budget, categories[1].Id)
 
-	query1 := fmt.Sprintf("SELECT id, name, budget, categoryId FROM categories WHERE categories.id \\= %q", user.Id)
+	query1 := `SELECT id, name, budget, categoryId FROM categories WHERE categories.id \= \?`
 	app.DB.Mock.
 		ExpectQuery(query1).
 		WillReturnRows(rows1)
@@ -286,7 +285,7 @@ func TestGetBudget(t *testing.T) {
 		AddRow(user.Id, whitelist[1].Name, whitelist[1].Category, whitelist[1].Id).
 		AddRow(user.Id, whitelist[2].Name, whitelist[2].Category, whitelist[2].Id)
 
-	query2 := fmt.Sprintf("SELECT id, name, category, itemId FROM whitelist WHERE whitelist.id \\= %q", user.Id)
+	query2 := `SELECT id, name, category, itemId FROM whitelist WHERE whitelist.id \= \?`
 	app.DB.Mock.
 		ExpectQuery(query2).
 		WillReturnRows(rows2)
@@ -391,7 +390,7 @@ func TestGetBudgetFailure(t *testing.T) {
 		AddRow(user.Id, categories[0].Name, categories[0].Budget, categories[0].Id).
 		AddRow(user.Id, categories[1].Name, categories[1].Budget, categories[1].Id)
 
-	query1 := fmt.Sprintf("SELECT id, name, budget, categoryId FROM categories WHERE categories.id \\= %q", user.Id)
+	query1 := `SELECT id, name, budget, categoryId FROM categories WHERE categories.id \= \?`
 	app.DB.Mock.
 		ExpectQuery(query1).
 		WillReturnRows(rows1)
@@ -401,7 +400,7 @@ func TestGetBudgetFailure(t *testing.T) {
 		AddRow(user.Id, whitelist[1].Name, whitelist[1].Category, whitelist[1].Id).
 		AddRow(user.Id, whitelist[2].Name, whitelist[2].Category, whitelist[2].Id)
 
-	query2 := fmt.Sprintf("SELECT id, name, category, itemId FROM whitelist WHERE whitelist.id \\= %q", user.Id)
+	query2 := `SELECT id, name, category, itemId FROM whitelist WHERE whitelist.id \= \something`
 	app.DB.Mock.
 		ExpectQuery(query2).
 		WillReturnRows(rows2)

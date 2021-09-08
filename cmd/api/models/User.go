@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/elopez00/scale-backend/pkg/application"
@@ -40,8 +39,8 @@ func (u *User) Create(app *application.App) error {
 // ! This function automatically assumes that errors yield false
 func (u *User) Exists(app *application.App) bool {
 	var test User
-	query := fmt.Sprintf("SELECT firstname, email FROM userinfo WHERE email=%q", u.Email)
-	if err := app.DB.Client.QueryRow(query).Scan(&test.Id, &test.Email); err != nil {
+	query := "SELECT firstname, email FROM userinfo WHERE email = ?"
+	if err := app.DB.Client.QueryRow(query, u.Email).Scan(&test.Id, &test.Email); err != nil {
 		log.Println(err)
 		return false
 	} else {
@@ -53,8 +52,9 @@ func (u *User) Exists(app *application.App) bool {
 // GetCredentials Method gives gets credentials found in database using current user's Email value.
 // Any problem with the query or database connection will be reflected in returned error.
 func (u *User) GetCredentials(app *application.App, actualUser *User) error {
-	query := fmt.Sprintf("SELECT email, password, id FROM userinfo WHERE email=%q", u.Email)
-	if err := app.DB.Client.QueryRow(query).Scan(&actualUser.Email, &actualUser.Password, &actualUser.Id); err != nil {
+	query := "SELECT email, password, id FROM userinfo WHERE email = ?"
+	if err := app.DB.Client.QueryRow(query, u.Email).Scan(&actualUser.Email, &actualUser.Password, &actualUser.Id)
+	err != nil {
 		return err
 	}
 

@@ -3,7 +3,6 @@ package sdk_test
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"testing"
 
@@ -74,7 +73,7 @@ func TestGetBudget(t *testing.T) {
 		AddRow(user.Id, categories[1].Name, categories[1].Budget, categories[1].Id).
 		AddRow(user.Id, categories[2].Name, categories[2].Budget, categories[2].Id)
 
-	query1 := fmt.Sprintf("SELECT id, name, budget, categoryId FROM categories WHERE categories.id \\= %q", user.Id)
+	query1 := `SELECT id, name, budget, categoryId FROM categories WHERE categories.id \= \?`
 	app.DB.Mock.
 		ExpectQuery(query1).
 		WillReturnRows(rows1)
@@ -87,7 +86,7 @@ func TestGetBudget(t *testing.T) {
 		AddRow(user.Id, whitelist[4].Name, whitelist[4].Category, whitelist[4].Id).
 		AddRow(user.Id, whitelist[5].Name, whitelist[5].Category, whitelist[5].Id)
 
-	query2 := fmt.Sprintf("SELECT id, name, category, itemId FROM whitelist WHERE whitelist.id \\= %q", user.Id)
+	query2 := `SELECT id, name, category, itemId FROM whitelist WHERE whitelist.id \= \?`
 	app.DB.Mock.
 		ExpectQuery(query2).
 		WillReturnRows(rows2)

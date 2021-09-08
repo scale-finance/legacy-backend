@@ -39,7 +39,7 @@ func TestUserDoesExists(t *testing.T) {
 	rows := sqlmock.NewRows([]string{"id", "email"}).
 		AddRow(user.Id, user.Email)
 
-	query := `SELECT firstname, email FROM userinfo WHERE email\="smarsh@southpark\.com"`
+	query := `SELECT firstname, email FROM userinfo WHERE email \= \?`
 	app.DB.Mock.ExpectQuery(query).WillReturnRows(rows)
 
 	exists := user.Exists(app)
@@ -55,12 +55,12 @@ func TestUserDoesNotExist(t *testing.T) {
 	app := test.GetMockApp()
 	defer test.CloseDB(t, app)
 
-	query := `SELECT firstname, email FROM userinfo WHERE email\="smarsh@southpark\.com"`
+	query := `SELECT firstname, email FROM userinfo WHERE email \= \?`
 	app.DB.Mock.ExpectQuery(query)
 
 	exists := user.Exists(app)
 	if exists {
-		t.Error("User sould not exist")
+		t.Error("User should not exist")
 		return
 	}
 
@@ -74,7 +74,7 @@ func TestGetCredential(t *testing.T) {
 	rows := sqlmock.NewRows([]string{"email", "password", "id"}).
 		AddRow(user.Email, user.Password, user.Id)
 
-	query := `SELECT email, password, id FROM userinfo WHERE email\="smarsh@southpark\.com"`
+	query := `SELECT email, password, id FROM userinfo WHERE email \= \?`
 	app.DB.Mock.ExpectQuery(query).WillReturnRows(rows)
 
 	var actualUser models.User
@@ -90,7 +90,7 @@ func TestUnsuccessfulGetCredential(t *testing.T) {
 	app := test.GetMockApp()
 	defer test.CloseDB(t, app)
 
-	query := `SELECT email, password, id FROM userinfo WHERE email\="smarsh@southpark\.com"`
+	query := `SELECT email, password, id FROM userinfo WHERE email \= \?`
 	app.DB.Mock.ExpectQuery(query)
 
 	var actualUser models.User

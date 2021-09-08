@@ -40,7 +40,7 @@ func TestExistingUserError(t *testing.T) {
 	// run expectation
 	rows := sqlmock.NewRows([]string{"id", "email"}).AddRow(user.Id, user.Email)
 	
-	query := `SELECT firstname, email FROM userinfo WHERE email\="smarsh@southpark\.com"`
+	query := `SELECT firstname, email FROM userinfo WHERE email \= \?`
 	app.DB.Mock.ExpectQuery(query).WillReturnRows(rows)
 
 	// create body of function
@@ -61,7 +61,7 @@ func TestPasswordIncorrect(t *testing.T) {
 		AddRow(user.Email, password, user.Id)
 	
 	// query
-	query := `SELECT email, password, id FROM userinfo WHERE email\="smarsh@southpark\.com"`
+	query := `SELECT email, password, id FROM userinfo WHERE email \= \?`
 	app.DB.Mock.ExpectQuery(query).WillReturnRows(rows)
 
 	res := test.Post("/login", sdk.Login(app), getBody())
@@ -73,7 +73,7 @@ func TestUserInvalid(t *testing.T) {
 	app := test.GetMockApp()
 	defer test.CloseDB(t, app)
 
-	query := `SELECT email, password, id FROM userinfo WHERE email\="smarsh@southpark\.com"`
+	query := `SELECT email, password, id FROM userinfo WHERE email \= \?`
 	app.DB.Mock.ExpectQuery(query)
 
 	res := test.Post("/login", sdk.Login(app), getBody())
@@ -85,7 +85,7 @@ func TestUserSignout(t *testing.T) {
 	app := test.GetMockApp()
 	defer test.CloseDB(t, app)
 
-	res := test.GetWithCookie("/v0/logout", sdk.Logout(app), app, "AuthToken") 
+	res := test.GetWithCookie("/v0/logout", sdk.Logout(), app, "AuthToken")
 	test.Response(t, res, http.StatusOK)
 }
 
@@ -93,6 +93,6 @@ func TestUserSignoutFailure(t *testing.T) {
 	app := test.GetMockApp()
 	defer test.CloseDB(t, app)
 
-	res := test.Get("/v0/logout", sdk.Logout(app))
+	res := test.Get("/v0/logout", sdk.Logout())
 	test.Response(t, res, http.StatusBadRequest)
 }
