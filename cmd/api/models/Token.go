@@ -1,21 +1,19 @@
 package models
 
 import (
-	"fmt"
-
 	"github.com/elopez00/scale-backend/pkg/application"
 )
 
 // TODO use prepare statement
 
-// for use of plaid public token retrieval
+// Token for use of plaid public token retrieval
 type Token struct {
 	Value string `json:"value"`
 	Id    string `json:"id"`
 	Institution  string `json:"name"`
 }
 
-// Method adds the permanent plaid token and stores into the plaidtokens table with the
+// Add method adds the permanent plaid token and stores into the plaid tokens table with the
 // same id as the user. This function accepts two strings. The first one being the
 // string describing the permanent token, and the second being a string that describes
 // the item ID. Any problem given by this request will be reflected by the returned error.
@@ -34,14 +32,14 @@ func (t *Token) Add(app *application.App, userId string) error {
 	return nil
 }
 
-// Method that returns every token associated to the user in the form of a slice of Token pointers.
-// Any problem with the query or database operatinon will be reflected as an error and the slice
+// GetTokens returns every token associated to the user in the form of a slice of Token pointers.
+// Any problem with the query or database operation will be reflected as an error and the slice
 // will be returned as nil.
 func GetTokens(app *application.App, userId string) ([]*Token, error) {
-	query := fmt.Sprintf("SELECT id, token, itemID, institution FROM plaidtokens WHERE id=%q", userId)
+	query := "SELECT id, token, itemID, institution FROM plaidtokens WHERE id = ?"
 
 	// get rows from query
-	rows, err := app.DB.Client.Query(query)
+	rows, err := app.DB.Client.Query(query, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -62,4 +60,21 @@ func GetTokens(app *application.App, userId string) ([]*Token, error) {
 	}
 
 	return tokens, nil
+}
+
+// Get will get a token from the database and return it given the user's ID and the
+// token id
+func (t *Token) Get(app *application.App, userId string) error {
+	// get row
+	query := "SELECT id, token, itemID, institution FROM plaidtokens WHERE id = ? AND itemID = ?"
+	row := app.DB.Client.QueryRow(query, userId, t.Id)
+
+	// make token
+	var placeholder string // don't know how to avoid this
+
+	if err := row.Scan(&placeholder, &t.Value, &t.Id, &t.Institution); err != nil {
+		return err
+	}
+
+	return nil
 }

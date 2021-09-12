@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -19,16 +20,14 @@ import (
 // the link token or the user's connection, it will return a json response error to the frontend
 func GetPlaidToken(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w.Header().Set("Content-Type", "application/json")
-
 		// creates token configuration
 		tokenConfig := plaid.LinkTokenConfigs{
 			User: &plaid.LinkTokenUser{
-				ClientUserID: fmt.Sprintf("%v", r.Context().Value(models.Key("user"))),
+				ClientUserID: GetIDFromContext(r),
 			},
 			ClientName:   "Scale",
 			Products:     []string{"auth", "transactions"},
-			CountryCodes: []string{"US"},
+			CountryCodes: []string{app.Config.GetPlaid()["countryCode"]},
 			Language:     "en",
 			Webhook:      app.Plaid.RedirectURL,
 		}
@@ -46,6 +45,49 @@ func GetPlaidToken(app *application.App) httprouter.Handle {
 		// when successful returns a result response
 		msg := "Successfully received link token from plaid"
 		models.CreateResponse(w, msg, tokenResponse.LinkToken)
+	}
+}
+
+// UpdatePlaidToken returns a link token in update mode to allow user re-authentication
+func UpdatePlaidToken(app *application.App) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		defer CloseBody(r)
+
+		userId := GetIDFromContext(r)
+
+		var token models.Token
+		if err := json.NewDecoder(r.Body).Decode(&token); err != nil {
+			log.Println("Failed to decode token object from json")
+			return
+		}
+
+		// get the token
+		if err := token.Get(app, userId); err != nil {
+			msg := "Failed to get token from database"
+			models.CreateError(w, http.StatusNotFound, msg, err)
+			return
+		}
+
+		tokenConfig := plaid.LinkTokenConfigs{
+			User: &plaid.LinkTokenUser{
+				ClientUserID: GetIDFromContext(r),
+			},
+			ClientName:   "Scale",
+			CountryCodes: []string{app.Config.GetPlaid()["countryCode"]},
+			Language:     "en",
+			Webhook:      app.Plaid.RedirectURL,
+			AccessToken: token.Value,
+		}
+
+		res, err := app.Plaid.Client.CreateLinkToken(tokenConfig)
+		if err != nil {
+			msg := "Failed to update token"
+			models.CreateError(w, http.StatusBadGateway, msg, err)
+			return
+		}
+
+		msg := "Successfully updated access token"
+		models.CreateResponse(w, msg, res.LinkToken)
 	}
 }
 
@@ -156,7 +198,8 @@ func GetTransactions(app *application.App) httprouter.Handle {
 func GetBalance(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		// create the user with the id obtained from middleware context
-		userId := fmt.Sprintf("%v", r.Context().Value(models.Key("user")))
+		userId := GetIDFromContext(r)
+		log.Println(userId)
 
 		// get all tokens with the user id
 		tokens, err := models.GetTokens(app, userId)
@@ -168,17 +211,31 @@ func GetBalance(app *application.App) httprouter.Handle {
 		// create waitGroup
 		var waitGroup sync.WaitGroup
 
+		// creating a context with cancel
+		ctx, cancel := context.WithCancel(r.Context())
+		defer cancel()
+
 		// define a balance object and loop through tokens to start creating it
 		var balance models.Balance
-		
+
+		// create continuous error
+		var asyncError error
+		var faultyInstitute string
+
 		for _, token := range tokens {
 			waitGroup.Add(1)
-			
+
 			go func(token *models.Token) {
 				defer waitGroup.Done()
 
 				// get balance response
 				var backup plaid.GetAccountsResponse
+
+				// stop calling requests if there has been an error somewhere
+				select {
+				case <-ctx.Done(): return
+				default:
+				}
 
 				// get liabilities
 				res, err := app.Plaid.Client.GetLiabilities(token.Value)
@@ -188,16 +245,17 @@ func GetBalance(app *application.App) httprouter.Handle {
 				// liabilities call or the balances call fail for any other reason, it will return
 				// as json response
 				if err != nil && len(err.Error()) > 107 && err.Error()[85:107] == "PRODUCTS_NOT_SUPPORTED" {
-					log.Println(err) 
-					
+					log.Println(err)
 					if backup, err = app.Plaid.Client.GetAccounts(token.Value); err != nil {
-						msg := "Error retrieving Liabilities from client:"
-						models.CreateError(w, http.StatusBadGateway, msg, err)
+						faultyInstitute = token.Id
+						asyncError = err
+						cancel()
 						return
 					}
-				} else if err != nil { 
-					msg := "Error retrieving Liabilities from client"
-					models.CreateError(w, http.StatusBadGateway, msg, err)
+				} else if err != nil {
+					faultyInstitute = token.Id
+					asyncError = err
+					cancel()
 					return
 				}
 
@@ -219,7 +277,12 @@ func GetBalance(app *application.App) httprouter.Handle {
 		waitGroup.Wait()
 
 		// return balance object in result of response
-		msg := "Successfully retrieved balance"
-		models.CreateResponse(w, msg, balance)
+		if ctx.Err() == nil {
+			msg := "Successfully retrieved balance"
+			models.CreateResponse(w, msg, balance)
+		} else {
+			msg := "Error retrieving Balances from client"
+			models.CreateErrorWithResult(w, http.StatusBadGateway, msg, asyncError, faultyInstitute)
+		}
 	}
 }

@@ -59,7 +59,27 @@ func CreateError(w http.ResponseWriter, status int, message string, system error
 	}
 }
 
-// * Plaid responses
+func CreateErrorWithResult(w http.ResponseWriter, status int, message string, system error, result interface{}) {
+	if system != nil {
+		log.Println(system.Error())
+	}
+	encoder := json.NewEncoder(w)
+
+	res := Response{
+		Status:  status,
+		Message: message,
+		Result: result,
+	}
+
+	w.WriteHeader(status)
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+
+	if err := encoder.Encode(res); err != nil {
+		log.Println("failed to encode response")
+		return
+	}
+}
 
 // Key for use of context keys
 type Key string

@@ -9,11 +9,11 @@ import (
 	"github.com/elopez00/scale-backend/cmd/api/models"
 	"github.com/elopez00/scale-backend/pkg/application"
 
-	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/julienschmidt/httprouter"
 )
 
-// Middleware function that takes in a handler and an application and returns another
+// Authenticate is a function that takes in a handler and an application and returns another
 // handler that tests the validity of authentication tokens found in auth cookie. If
 // the token is expired or invalid for any reason the user will not be authenticated
 // and will not be able to call api. Otherwise, the function will serve the res, req,
