@@ -125,7 +125,7 @@ func ExchangePublicToken(app *application.App) httprouter.Handle {
 
 		// gets the user id extracted from authentication cookie for later
 		// use in the creation of the row containing the permanent token
-		userId := fmt.Sprintf("%v", r.Context().Value(models.Key("user")))
+		userId := GetIDFromContext(r)
 
 		// handles failures in the addition of tokens to the database and reflects
 		// any success or failure in json response/server logs
