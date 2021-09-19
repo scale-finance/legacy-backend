@@ -59,5 +59,4 @@ func CookieIsValid(r *http.Request, app *application.App, name string) (string, 
 	claims, _ := token.Claims.(jwt.MapClaims)
 	issuer := fmt.Sprint(claims["iss"])
 	return issuer, nil
-
 }

@@ -199,7 +199,6 @@ func GetBalance(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		// create the user with the id obtained from middleware context
 		userId := GetIDFromContext(r)
-		log.Println(userId)
 
 		// get all tokens with the user id
 		tokens, err := models.GetTokens(app, userId)
@@ -244,19 +243,30 @@ func GetBalance(app *application.App) httprouter.Handle {
 				// the balances to at least have general info, and it will log it to the server. If the
 				// liabilities call or the balances call fail for any other reason, it will return
 				// as json response
-				if err != nil && len(err.Error()) > 107 && err.Error()[85:107] == "PRODUCTS_NOT_SUPPORTED" {
-					log.Println(err)
-					if backup, err = app.Plaid.Client.GetAccounts(token.Value); err != nil {
-						faultyInstitute = token.Id
-						asyncError = err
-						cancel()
-						return
+				if err != nil {
+					switch (GetPlaidErrorCode(err)) {
+					case "PRODUCTS_NOT_SUPPORTED": 
+						{
+							if backup, err = app.Plaid.Client.GetAccounts(token.Value); err != nil {
+								asyncError = err
+								cancel()
+								return
+							}; break
+						}
+					case "ITEM_LOGIN_REQUIRED": 
+						{
+							faultyInstitute = token.Id
+							asyncError = err
+							cancel()
+							return
+						}
+					default: 
+						{
+							asyncError = err
+							cancel()
+							return
+						}
 					}
-				} else if err != nil {
-					faultyInstitute = token.Id
-					asyncError = err
-					cancel()
-					return
 				}
 
 				// loop through all accounts related to that token
@@ -282,7 +292,11 @@ func GetBalance(app *application.App) httprouter.Handle {
 			models.CreateResponse(w, msg, balance)
 		} else {
 			msg := "Error retrieving Balances from client"
-			models.CreateErrorWithResult(w, http.StatusBadGateway, msg, asyncError, faultyInstitute)
+			if len(faultyInstitute) > 0 {
+				models.CreateErrorWithResult(w, http.StatusBadGateway, msg, asyncError, faultyInstitute)
+			} else {
+				models.CreateError(w, http.StatusBadGateway, msg, asyncError)
+			}
 		}
 	}
 }
