@@ -20,23 +20,17 @@ func main() {
 		// and create a map with its values
 		environment = make(map[string]string)
 		for _, item := range os.Environ() {
-			log.Println("Environment Line: ", item)
 			splits := strings.Split(item, "=")
 			key := strings.Trim(splits[0], " ")
 			val := strings.Trim(splits[1], " ")
-			log.Println("Key: ", key, " Value: ", val)
 			environment[key] = val
 		}
-
-		log.Println("Environment map: ", environment)
 		
 		// if there were no elements then either return the error again
 		if len(environment) == 0 {
 			log.Fatal("Failed go get environment file:", err)
 		}
 	}
-
-	log.Println(environment)
 
 	// gets application
 	app, err := application.Get(environment)
