@@ -33,12 +33,13 @@ func Get(config config.Config) (*DB, error) {
 	// else, we get the database described by the environment
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
-		log.Print(connectionString)
+		log.Println(connectionString)
 		return nil, err
 	}
 
 	// if we can't successfully ping the server than we return an error
 	if err := db.Ping(); err != nil {
+		log.Println(connectionString)
 		return nil, err
 	}
 
