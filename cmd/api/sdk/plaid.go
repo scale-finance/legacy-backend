@@ -193,7 +193,7 @@ func GetTransactions(app *application.App) httprouter.Handle {
 					if GetPlaidErrorCode(err) == "ITEM_LOGIN_REQUIRED" {
 						institution = token.Id
 					}
-
+					cancel()
 					return
 				}
 	
