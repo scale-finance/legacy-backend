@@ -1,6 +1,5 @@
 # Scale Backend
 
-
 ## Intro
 This is the backend for the soon to be mobile application - Scale. A fintech application that I am making for fun.
 I just decided one day that I disliked mint and ever since I've dedicated myself to making this application with
