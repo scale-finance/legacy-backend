@@ -18,7 +18,7 @@ func main() {
 	if err != nil {
 		// if for whatever reason godotenv fails, try to load from the system environment
 		// and create a map with its values
-		environment := make(map[string]string)
+		environment = make(map[string]string)
 		for _, item := range os.Environ() {
 			log.Println("Environment Line: ", item)
 			splits := strings.Split(item, "=")
