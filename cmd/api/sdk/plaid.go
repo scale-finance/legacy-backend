@@ -53,6 +53,7 @@ func UpdatePlaidToken(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		defer CloseBody(r)
 
+		// gets the stored user ID
 		userId := GetIDFromContext(r)
 
 		var token models.Token
@@ -79,6 +80,9 @@ func UpdatePlaidToken(app *application.App) httprouter.Handle {
 			AccessToken: token.Value,
 		}
 
+		// by establishing the config with an access token, we return a link token that can
+		// operate under update mode which will automatically handle institutions that need
+		// authentication
 		res, err := app.Plaid.Client.CreateLinkToken(tokenConfig)
 		if err != nil {
 			msg := "Failed to update token"
@@ -142,7 +146,7 @@ func ExchangePublicToken(app *application.App) httprouter.Handle {
 func GetTransactions(app *application.App) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		// create the user with the id obtained from middleware context
-		userId := fmt.Sprintf("%v", r.Context().Value(models.Key("user")))
+		userId := GetIDFromContext(r)
 
 		// gets all tokens affiliated with user
 		tokens, err := models.GetTokens(app, userId)
@@ -158,9 +162,17 @@ func GetTransactions(app *application.App) httprouter.Handle {
 
 		// initialize wait group
 		var waitGroup sync.WaitGroup
+		
+		// initialize context
+		ctx, cancel := context.WithCancel(r.Context())
+		defer cancel()
 
 		// make transactions map that will be returned in result
 		transactions := make(map[string][]plaid.Transaction)
+
+		// handling async error
+		var asyncError error
+		var institution string
 
 		for _, token := range tokens {
 			waitGroup.Add(1)
@@ -168,13 +180,21 @@ func GetTransactions(app *application.App) httprouter.Handle {
 			go func(token *models.Token) {
 				defer waitGroup.Done()
 
+				// stop all incoming processes after error
+				select {
+				case <- ctx.Done(): return
+				default: 
+				}
+
 				// gets the transactions from plaid, if there is any error in the request,
 				// it will be returned as a JSON response
 				res, err := app.Plaid.Client.GetTransactions(token.Value, startDate, endDate)
 				if err != nil {
-					msg := "Failed to retrieve tokens from Plaid client"
-					log.Println(token.Value)
-					models.CreateError(w, http.StatusBadGateway, msg, err)
+					asyncError = err
+					if GetPlaidErrorCode(err) == "ITEM_LOGIN_REQUIRED" {
+						institution = token.Id
+					}
+
 					return
 				}
 	
@@ -184,10 +204,20 @@ func GetTransactions(app *application.App) httprouter.Handle {
 				}
 			}(token)
 		}
+
 		waitGroup.Wait()
 
-		msg := "Successfully retrieved transactions from all bank accounts"
-		models.CreateResponse(w, msg, transactions)
+		if ctx.Err() == nil {
+			msg := "Successfully retrieved transactions from all bank accounts"
+			models.CreateResponse(w, msg, transactions)
+		} else {
+			msg := "Failed to retrieve tokens from Plaid client"
+			if len(institution) > 0 {
+				models.CreateErrorWithResult(w, http.StatusBadGateway, msg, asyncError, institution)
+			} else {
+				models.CreateError(w, http.StatusBadGateway, msg, asyncError)
+			}
+		}	
 	}
 }
 
@@ -232,7 +262,7 @@ func GetBalance(app *application.App) httprouter.Handle {
 
 				// stop calling requests if there has been an error somewhere
 				select {
-				case <-ctx.Done(): return
+				case <- ctx.Done(): return
 				default:
 				}
 
