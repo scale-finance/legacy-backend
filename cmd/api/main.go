@@ -13,7 +13,7 @@ func main() {
 	// gets environment variables
 	environment, err := godotenv.Read()
 	if err != nil {
-		log.Fatal("Failed go get environment file:", environment)
+		log.Fatal("Failed go get environment file:", err)
 	}
 
 	// gets application
