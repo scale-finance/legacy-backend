@@ -25,12 +25,14 @@ func main() {
 			val := strings.Trim(splits[1], " ")
 			environment[key] = val
 		}
-
+		
 		// if there were no elements then either return the error again
 		if len(environment) == 0 {
 			log.Fatal("Failed go get environment file:", err)
 		}
 	}
+
+	log.Println(environment)
 
 	// gets application
 	app, err := application.Get(environment)
