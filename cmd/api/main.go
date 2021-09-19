@@ -21,8 +21,8 @@ func main() {
 		environment := make(map[string]string)
 		for _, item := range os.Environ() {
 			splits := strings.Split(item, "=")
-			key := splits[0]
-			val := splits[1]
+			key := strings.Trim(splits[0], " ")
+			val := strings.Trim(splits[1], " ")
 			environment[key] = val
 		}
 

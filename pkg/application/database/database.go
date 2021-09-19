@@ -2,6 +2,8 @@ package database
 
 import (
 	"database/sql"
+	"log"
+
 	"github.com/elopez00/scale-backend/pkg/application/config"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -31,6 +33,7 @@ func Get(config config.Config) (*DB, error) {
 	// else, we get the database described by the environment
 	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
+		log.Print(connectionString)
 		return nil, err
 	}
 
