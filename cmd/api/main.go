@@ -1,19 +1,35 @@
 package main
 
 import (
+	"log"
+	"os"
+	"strings"
+
 	"github.com/elopez00/scale-backend/cmd/api/router"
 	"github.com/elopez00/scale-backend/pkg/application"
 	"github.com/elopez00/scale-backend/pkg/application/database"
 	"github.com/elopez00/scale-backend/pkg/server"
 	"github.com/joho/godotenv"
-	"log"
 )
 
 func main() {
 	// gets environment variables
 	environment, err := godotenv.Read()
 	if err != nil {
-		log.Fatal("Failed go get environment file:", err)
+		// if for whatever reason godotenv fails, try to load from the system environment
+		// and create a map with its values
+		environment := make(map[string]string)
+		for _, item := range os.Environ() {
+			splits := strings.Split(item, "=")
+			key := splits[0]
+			val := splits[1]
+			environment[key] = val
+		}
+
+		// if there were no elements then either return the error again
+		if len(environment) == 0 {
+			log.Fatal("Failed go get environment file:", err)
+		}
 	}
 
 	// gets application
