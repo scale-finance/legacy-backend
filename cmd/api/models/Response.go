@@ -49,9 +49,8 @@ func CreateError(w http.ResponseWriter, status int, message string, system error
 		Message: message,
 	}
 
-	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(status)
 
 	if err := encoder.Encode(res); err != nil {
 		log.Println("failed to encode response")
@@ -71,9 +70,8 @@ func CreateErrorWithResult(w http.ResponseWriter, status int, message string, sy
 		Result: result,
 	}
 
-	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(status)
 
 	if err := encoder.Encode(res); err != nil {
 		log.Println("failed to encode response")
