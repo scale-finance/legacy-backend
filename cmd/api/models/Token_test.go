@@ -73,3 +73,17 @@ func TestGetToken(t *testing.T) {
 		return
 	}
 }
+
+func TestUpdateToken(t *testing.T) {
+	app := test.GetMockApp()
+	defer test.CloseDB(t, app)
+
+	query := `UPDATE plaidtokens SET token \= \? WHERE itemId \= \? AND id \= \?`
+	app.DB.Mock.ExpectExec(query).WillReturnResult(sqlmock.NewResult(1, 1))
+
+	tempToken := token
+	err := tempToken.Update(app, user.Id)
+
+	test.ModelMethod(t, err, "update")
+	test.MockExpectations(t, app)
+}

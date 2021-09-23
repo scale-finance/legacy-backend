@@ -19,6 +19,7 @@ func Get(app *application.App) *httprouter.Router {
 
 	// plaid token management
 	mux.POST("/v0/token/exchange", m.Authenticate(sdk.ExchangePublicToken(app), app))
+	mux.PUT("/v0/token/exchange", m.Authenticate(sdk.ExchangePublicToken(app), app))
 	mux.GET("/v0/token/link", m.Authenticate(sdk.GetPlaidToken(app), app))
 	mux.PUT("/v0/token/link", m.Authenticate(sdk.UpdatePlaidToken(app), app))
 

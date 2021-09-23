@@ -121,6 +121,17 @@ func ExchangePublicToken(app *application.App) httprouter.Handle {
 		// sets value of token to response values
 		token.Value = res.AccessToken
 		token.Id = res.ItemID
+		
+		// get the institution name
+		institution, err := app.Plaid.Client.GetInstitutionByID(token.Id, []string{"US"})
+		if err != nil {
+			msg := "Failuer to get institution"
+			models.CreateError(w, http.StatusBadGateway, msg, err)
+			return
+		}
+
+		// assign institution
+		token.Institution = institution.Institution.Name
 
 		// gets the user id extracted from authentication cookie for later
 		// use in the creation of the row containing the permanent token
@@ -128,10 +139,18 @@ func ExchangePublicToken(app *application.App) httprouter.Handle {
 
 		// handles failures in the addition of tokens to the database and reflects
 		// any success or failure in json response/server logs
-		if err = token.Add(app, userId); err != nil {
-			msg := "Failure to create access token"
-			models.CreateError(w, http.StatusBadGateway, msg, err)
-			return
+		if r.Method == http.MethodGet {
+			if err = token.Add(app, userId); err != nil {
+				msg := "Failure to create access token"
+				models.CreateError(w, http.StatusBadGateway, msg, err)
+				return
+			}
+		} else {
+			if err = token.Update(app, userId); err != nil {
+				msg := "Failure to update access token"
+				models.CreateError(w, http.StatusBadGateway, msg, err)
+				return
+			}
 		}
 
 		msg := "Access token created successfully"

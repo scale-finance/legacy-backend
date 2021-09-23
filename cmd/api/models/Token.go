@@ -32,6 +32,16 @@ func (t *Token) Add(app *application.App, userId string) error {
 	return nil
 }
 
+func (t *Token) Update(app *application.App, userId string) error {
+	query := "UPDATE plaidtokens SET token = ? WHERE itemId = ? AND id = ?"
+	_, err := app.DB.Client.Exec(query, t.Value, t.Id, userId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // GetTokens returns every token associated to the user in the form of a slice of Token pointers.
 // Any problem with the query or database operation will be reflected as an error and the slice
 // will be returned as nil.
